@@ -1,0 +1,25 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="400dp"
+    android:paddingLeft="15dp"
+    android:paddingRight="15dp"
+    tools:context="com.licht.vkpost.vkpost.view.BottomSheetFragment">
+
+    <TextView
+        android:id="@+id/tv_stickers_label"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:text="Стикеры"
+        android:textColor="@android:color/black"
+        android:textSize="20dp" />
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/rv_stickers"
+        android:layout_width="match_parent"
+        android:layout_below="@id/tv_stickers_label"
+        android:layout_height="320dp" />
+
+</RelativeLayout>

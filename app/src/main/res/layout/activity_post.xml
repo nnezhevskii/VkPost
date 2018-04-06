@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.licht.vkpost.vkpost.PostActivity">
+
+    <RelativeLayout
+        android:id="@+id/top_panel"
+        android:layout_width="match_parent"
+        android:layout_height="50dp">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="15dp"
+            android:src="@drawable/ic_toolbar_font" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="Новая запись"
+            android:textColor="@android:color/black"
+            android:textSize="18dp" />
+
+        <ImageView
+            android:id="@+id/iv_sticket"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="15dp"
+            android:src="@drawable/ic_toolbar_sticker" />
+
+        <View xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="1px"
+            android:layout_alignParentBottom="true"
+            android:background="@android:color/darker_gray" />
+
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/bottom_panel"
+        android:layout_width="match_parent"
+        android:layout_height="65dp"
+        android:layout_alignParentBottom="true">
+
+        <View xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="1px"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:background="@android:color/darker_gray" />
+
+        <Button
+            android:layout_width="120dp"
+            android:id="@+id/btn_save"
+            android:layout_height="35dp"
+            android:background="@drawable/round_button"
+            android:textColor="@android:color/white"
+            android:layout_alignParentRight="true"
+            android:layout_centerInParent="true"
+            android:layout_margin="10dp"
+            android:textAllCaps="true"
+            android:text="Сохранить"/>
+
+        <View xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="1px"
+            android:layout_height="match_parent"
+            android:layout_toLeftOf="@id/btn_save"
+            android:background="@android:color/darker_gray" />
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/rv_background"
+            android:layout_width="match_parent"
+            android:layout_toLeftOf="@id/btn_save"
+            android:layout_height="match_parent"/>
+
+    </RelativeLayout>
+
+
+    <ImageView
+        android:id="@+id/iv_post"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/top_panel"
+        android:layout_above="@id/bottom_panel"/>
+
+
+</RelativeLayout>

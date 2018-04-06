@@ -9,9 +9,6 @@ import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.util.Log
-import android.view.MotionEvent
-import android.view.ScaleGestureDetector
-import android.view.View
 import android.widget.ImageView
 import com.licht.vkpost.vkpost.data.model.ColorWrapper
 import com.licht.vkpost.vkpost.data.model.Sticker
@@ -19,27 +16,22 @@ import com.licht.vkpost.vkpost.data.model.StickerItem
 import com.licht.vkpost.vkpost.utils.getBrighterColor
 import com.licht.vkpost.vkpost.utils.getLessColor
 import com.licht.vkpost.vkpost.view.BottomSheetFragment
+import com.licht.vkpost.vkpost.view.GestureHelper
 import com.licht.vkpost.vkpost.view.IPostView
+import com.licht.vkpost.vkpost.view.ItemManipulator
 
 
-class PostActivity : AppCompatActivity(), IPostView {
+class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     private lateinit var ivPost: ImageView
 
+    var stickers: MutableList<StickerItem> = mutableListOf()
     private var selectedItem: StickerItem? = null
 
-    private lateinit var mScaleDetector: ScaleGestureDetector
-
-
-    private fun getSelectedSticker(x: Float, y: Float): StickerItem? {
-        return stickers.lastOrNull { stickerItem -> isTapOnSticker(stickerItem, x, y) }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_post)
         ivPost = findViewById(R.id.iv_post)
-
-        mScaleDetector = ScaleGestureDetector(this, MyPinchListener())
 
         findViewById<ImageView>(R.id.iv_sticket).setOnClickListener {
             val bottomSheetFragment = BottomSheetFragment()
@@ -47,49 +39,18 @@ class PostActivity : AppCompatActivity(), IPostView {
 
         }
 
-//        setBackground(ColorWrapper(ContextCompat.getColor(applicationContext, android.R.color.white)))
+        val gestureHelper = GestureHelper(ivPost)
+        gestureHelper.addListener(this)
 
-//        ivPost.setOnS
-
-        ivPost.setOnTouchListener(View.OnTouchListener { view, motionEvent ->
-
-            if (mScaleDetector.onTouchEvent(motionEvent))
-                return@OnTouchListener true
-
-            when (motionEvent.action) {
-
-                MotionEvent.ACTION_DOWN -> {
-                    selectedItem = getSelectedSticker(motionEvent.x, motionEvent.y)
-                    Log.e("PostActivity", "select: " + (selectedItem?.sticker?.title
-                            ?: "<nothing>"))
-                }
-
-                MotionEvent.ACTION_MOVE -> {
-                    if (selectedItem == null)
-                        return@OnTouchListener true
-
-                    val item = selectedItem!!
-                    item.left = motionEvent.x.toInt() - item.width / 2
-                    item.top = motionEvent.y.toInt() - item.height / 2
-
-                    redrawBackground()
-
-                    Log.e("PostActivity", "move: " + (selectedItem?.sticker?.title ?: "<nothing>"))
-                }
-
-                MotionEvent.ACTION_UP -> {
-                    selectedItem = null
-                    Log.e("PostActivity", "release")
-                }
-            }
-
-            return@OnTouchListener true
-        })
     }
 
-    fun isTapOnSticker(sticker: StickerItem, x: Float, y: Float): Boolean {
+    fun isTapOnSticker(sticker: StickerItem, x: Int, y: Int): Boolean {
         return x >= sticker.left && y >= sticker.top &&
                 x <= sticker.left + sticker.width && y <= sticker.top + sticker.height
+    }
+
+    private fun getSelectedSticker(x: Int, y: Int): StickerItem? {
+        return stickers.lastOrNull { stickerItem -> isTapOnSticker(stickerItem, x, y) }
     }
 
     override fun onStart() {
@@ -116,8 +77,6 @@ class PostActivity : AppCompatActivity(), IPostView {
 
         stickers.forEach { sticker ->
             drawSticker(canvas, sticker)
-//            canvas.drawBitmap(sticker.sticker.resource,
-//                    sticker.left.toFloat(), sticker.top.toFloat(), null)
         }
 
 
@@ -130,8 +89,6 @@ class PostActivity : AppCompatActivity(), IPostView {
                 (sticker.left + sticker.width).toFloat(), (sticker.top + sticker.height).toFloat())
         canvas.drawBitmap(sticker.sticker.resource, src, dst, null)
     }
-
-    var stickers: MutableList<StickerItem> = mutableListOf()
 
     fun addSticker(sticker: Sticker) {
         val bitmap = (ivPost.drawable as BitmapDrawable).bitmap
@@ -169,42 +126,52 @@ class PostActivity : AppCompatActivity(), IPostView {
         redrawStickers()
     }
 
-    inner class MyPinchListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-
-        override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
-            selectedItem = getSelectedSticker(detector.focusX, detector.focusY)
-            Log.e("PostActivity", "onScaleBegin: select sticker " + (selectedItem?.sticker?.title
-                    ?: "<nothing>"))
-            return super.onScaleBegin(detector)
-        }
-
-        override fun onScaleEnd(detector: ScaleGestureDetector) {
-            Log.e("PostActivity", "onScaleEnd: release")
-            super.onScaleEnd(detector)
-        }
-
-        override fun onScale(detector: ScaleGestureDetector): Boolean {
-            Log.d("TAG", "PINCH! OUCH!: " + detector.scaleFactor)
-            if (selectedItem == null)
-                return true
-            val item = selectedItem!!
-
-            val oldWidth = item.width
-            val oldHeight = item.height
-
-            item.width = (item.width * detector.scaleFactor).toInt()
-            item.height = (item.height * detector.scaleFactor).toInt()
-
-            val diffWidth = item.width - oldWidth
-            val diffHeight = item.height - oldHeight
-
-            item.left -= diffWidth / 2
-            item.top -= diffHeight / 2
-
-            redrawBackground()
-
-            return true
-        }
+    override fun selectItem(x: Int, y: Int) {
+        selectedItem = getSelectedSticker(x, y)
+        log("selectItem($x, $y). Selected item: " + (selectedItem?.sticker?.title ?: "<nothing>"))
     }
 
+    override fun releaseItem() {
+        selectedItem = null
+        log("releaseItem")
+    }
+
+    override fun moveTo(actualX: Int, actualY: Int, dx: Int, dy: Int) {
+        log("moveTo: ($actualX, $actualY, $dx, $dy)")
+        if (selectedItem == null)
+            return
+
+        val item = selectedItem!!
+        item.left += dx
+        item.top += dy
+
+        redrawBackground()
+    }
+
+    override fun scale(factor: Float) {
+        log("scale: $factor")
+        if (selectedItem == null)
+            return
+
+        val item = selectedItem!!
+
+        val oldWidth = item.width
+        val oldHeight = item.height
+
+        item.width = (item.width * factor).toInt()
+        item.height = (item.height * factor).toInt()
+
+        val diffWidth = item.width - oldWidth
+        val diffHeight = item.height - oldHeight
+
+        item.left -= diffWidth / 2
+        item.top -= diffHeight / 2
+
+        redrawBackground()
+
+    }
+
+    private fun log(message: String) {
+        Log.e("PostActivity", message)
+    }
 }

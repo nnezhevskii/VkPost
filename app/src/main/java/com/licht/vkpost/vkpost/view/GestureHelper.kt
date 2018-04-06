@@ -25,6 +25,9 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
     private var y = 0
     private var distance = 0f
 
+    private var positionFinger1: Pair<Float, Float> = Pair(0f, 0f)
+    private var positionFinger2: Pair<Float, Float> = Pair(0f, 0f)
+
     init {
         view.setOnTouchListener(this)
     }
@@ -49,6 +52,8 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
                     x = mPrimStartTouchEventX.toInt()
                     y = mPrimStartTouchEventY.toInt()
 
+                    positionFinger1 = Pair(mPrimStartTouchEventX, mPrimStartTouchEventY)
+
                     notifyItemSelect(event.x.toInt(), event.y.toInt())
                 }
                 if (mPtrCount == 2) {
@@ -56,6 +61,7 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
                     mSecStartTouchEventX = event.getX(1)
                     mSecStartTouchEventY = event.getY(1)
                     mPrimSecStartTouchDistance = distance(event, 0, 1)
+                    positionFinger2 = Pair(mSecStartTouchEventX, mSecStartTouchEventY)
                     distance = mPrimSecStartTouchDistance
                     Log.d("TAG", String.format("POINTER TWO X = %.5f, Y = %.5f", mSecStartTouchEventX, mSecStartTouchEventY))
                     selectTwoFingersItem()
@@ -105,9 +111,35 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
     }
 
     private fun handleTwoFingerAction(event: MotionEvent) {
+        val oldFingerPosition1 = positionFinger1
+        val oldFingerPosition2 = positionFinger2
+
+        positionFinger1 = Pair(event.getX(0), event.getY(0))
+        positionFinger2 = Pair(event.getX(1), event.getY(1))
+
         val oldDistance = distance
         distance = distance(event, 0, 1)
-        notifyItemScale(distance / oldDistance)
+        val angle = rotation(event)
+        Log.e("GestureHelper", "angle: " + angle)
+        notifyItemScaleAndRotate(distance / oldDistance, angle)
+    }
+
+    private fun rotation(event: MotionEvent): Float {
+        val delta_x = (event.getX(0) - event.getX(1)).toDouble()
+        val delta_y = (event.getY(0) - event.getY(1)).toDouble()
+        val radians = Math.atan2(delta_y, delta_x)
+        return Math.toDegrees(radians).toFloat()
+    }
+
+    /**
+     * @return The selected quadrant.
+     */
+    private fun getQuadrant(x: Double, y: Double): Int {
+        return if (x >= 0) {
+            if (y >= 0) 1 else 4
+        } else {
+            if (y >= 0) 2 else 3
+        }
     }
 
     private fun isScrollGesture(event: MotionEvent, ptrIndex: Int, originalX: Float, originalY: Float): Boolean {
@@ -157,8 +189,8 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
         notifyItemSelect(midX, midY)
     }
 
-    private fun notifyItemScale(scale: Float) {
-        listeners.forEach { listener -> listener.scale(scale) }
+    private fun notifyItemScaleAndRotate(scale: Float, angle: Float) {
+        listeners.forEach { listener -> listener.scale(scale, angle) }
     }
 
     private fun notifyItemSelect(x: Int, y: Int) {
@@ -179,6 +211,6 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
 interface ItemManipulator {
     fun selectItem(x: Int, y: Int)
     fun moveTo(actualX: Int, actualY: Int, dx: Int, dy: Int)
-    fun scale(factor: Float)
+    fun scale(factor: Float, angle: Float)
     fun releaseItem()
 }

@@ -21,6 +21,7 @@ import com.licht.vkpost.vkpost.view.IPostView
 import com.licht.vkpost.vkpost.view.ItemManipulator
 
 
+
 class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     private lateinit var ivPost: ImageView
 
@@ -84,10 +85,28 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     }
 
     private fun drawSticker(canvas: Canvas, sticker: StickerItem) {
+
         val src: Rect = Rect(0, 0, sticker.sticker.resource.width, sticker.sticker.resource.height)
         val dst: RectF = RectF(sticker.left.toFloat(), sticker.top.toFloat(),
                 (sticker.left + sticker.width).toFloat(), (sticker.top + sticker.height).toFloat())
         canvas.drawBitmap(sticker.sticker.resource, src, dst, null)
+
+//        val bitmap = sticker.sticker.resource
+//        val matrix = Matrix()
+//        val rect = Rect(0, 0, bitmap.width, bitmap.height)
+//        val px = rect.exactCenterX()
+//        val py = rect.exactCenterY()
+//        matrix.postTranslate(-bitmap.getWidth() / 2f, -bitmap.getHeight() / 2f)
+//        matrix.postRotate(sticker.angle)
+//        matrix.postTranslate(px, py)
+//        canvas.drawBitmap(bitmap, matrix, null)
+//        matrix.reset()
+
+
+//        canvas.save(Canvas.MATRIX_SAVE_FLAG); //Saving the canvas and later restoring it so only this image will be rotated.
+//        canvas.rotate(sticker.angle);
+
+//        canvas.restore()
     }
 
     fun addSticker(sticker: Sticker) {
@@ -148,7 +167,7 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         redrawBackground()
     }
 
-    override fun scale(factor: Float) {
+    override fun scale(factor: Float, angle: Float) {
         log("scale: $factor")
         if (selectedItem == null)
             return
@@ -166,6 +185,8 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
         item.left -= diffWidth / 2
         item.top -= diffHeight / 2
+
+        item.angle = angle
 
         redrawBackground()
 

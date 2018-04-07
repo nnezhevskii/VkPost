@@ -82,13 +82,27 @@
 
     </RelativeLayout>
 
-
-    <ImageView
-        android:id="@+id/iv_post"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/top_panel"
-        android:layout_above="@id/bottom_panel"/>
+        android:layout_above="@id/bottom_panel">
+
+        <ImageView
+            android:id="@+id/iv_post"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+        <!--<com.licht.vkpost.vkpost.view.custom.TrashView-->
+            <!--android:layout_width="80dp"-->
+            <!--android:layout_height="80dp"-->
+            <!--android:layout_alignParentBottom="true"-->
+            <!--android:layout_centerHorizontal="true"-->
+            <!--/>-->
+
+    </RelativeLayout>
+
+
 
 
 </RelativeLayout>

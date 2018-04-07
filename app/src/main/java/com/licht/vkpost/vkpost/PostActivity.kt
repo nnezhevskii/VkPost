@@ -1,9 +1,6 @@
 package com.licht.vkpost.vkpost
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Matrix
+import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -81,6 +78,8 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
 
         ivPost.setImageBitmap(bitmap)
+
+        drawTrash()
     }
 
     private fun drawSticker(canvas: Canvas, sticker: StickerItem) = with(sticker.sticker.resource) {
@@ -134,15 +133,90 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         ivPost.background = gd
 
         redrawStickers()
+
+    }
+
+    private var isTrashShowed: Boolean = false
+    private var isTrashActivated: Boolean = false
+
+    private var trashLeft = 0
+    private var trashTop = 0
+    private var trashRight = 0
+    private var trashBottom = 0
+
+    private fun drawTrash() {
+        if (!isTrashShowed)
+            return
+
+        val bitmap = (ivPost.drawable as BitmapDrawable).bitmap
+        val canvas = Canvas(bitmap)
+
+        var xCenter: Float = 0f
+        var yCenter: Float = 0f
+        var rad: Float = 0f
+
+        if (isTrashActivated) {
+
+            xCenter = bitmap.width / 2f
+            yCenter = bitmap.height - 150f
+            rad = 167f
+            trashLeft = xCenter.toInt()   - 125
+            trashTop = yCenter.toInt()    - 125
+            trashRight = xCenter.toInt()  + 125
+            trashBottom = yCenter.toInt() + 125
+
+        }
+        else {
+            xCenter = bitmap.width / 2f
+            yCenter = bitmap.height - 150f
+
+            trashLeft = xCenter.toInt() - 75
+            trashTop = yCenter.toInt() - 75
+            trashRight = xCenter.toInt() + 75
+            trashBottom = yCenter.toInt() + 75
+
+            rad = 100f
+        }
+
+
+
+        val closedTrashImage = BitmapFactory.decodeResource(applicationContext.resources, R.drawable.ic_fab_trash)
+        val openedTrashImage = BitmapFactory.decodeResource(applicationContext.resources, R.drawable.ic_fab_trash_released)
+
+        val paint = Paint()
+        paint.color = Color.WHITE
+
+        val src = Rect(0, 0, closedTrashImage.width, closedTrashImage.height)
+        val dst = Rect(trashLeft, trashTop, trashRight, trashBottom)
+
+        canvas.drawCircle(xCenter, yCenter, rad, paint)
+        if (isTrashActivated)
+            canvas.drawBitmap(openedTrashImage, src, dst, null)
+        else
+            canvas.drawBitmap(closedTrashImage, src, dst, null)
+
+
+        ivPost.setImageBitmap(bitmap)
     }
 
     override fun selectItem(x: Int, y: Int) {
         selectedItem = getSelectedSticker(x, y)
+        onItemSelected()
     }
 
     override fun releaseItem() {
+
+        if (isTrashActivated && selectedItem != null) {
+            stickers.remove(selectedItem!!)
+        }
+
         selectedItem = null
+        isTrashShowed = false
+
+        redrawBackground()
     }
+
+//    isTrashActivated
 
     override fun moveTo(actualX: Int, actualY: Int, dx: Int, dy: Int) {
         if (selectedItem == null)
@@ -152,7 +226,14 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         item.left += dx
         item.top += dy
 
+        isTrashActivated = isIntersectingWithTrashButton(actualX, actualY)
+
         redrawBackground()
+    }
+
+    fun isIntersectingWithTrashButton(actualX: Int, actualY: Int): Boolean {
+        return actualX in trashLeft..trashRight &&
+                actualY in trashTop..trashBottom
     }
 
     override fun scale(factor: Float, angle: Float) {
@@ -174,6 +255,18 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
 
         redrawBackground()
+
+    }
+
+    private fun onItemSelected() {
+        selectedItem?.let {
+            stickers.remove(it)
+            stickers.add(it)
+
+            isTrashShowed = true
+            redrawBackground()
+        }
+
 
     }
 

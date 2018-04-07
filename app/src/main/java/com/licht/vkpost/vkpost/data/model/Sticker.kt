@@ -29,8 +29,6 @@ data class Sticker(val title: String,
 
             var index = 1
             stickers = ids.map { id -> Sticker((index++).toString(), BitmapFactory.decodeResource(context.resources, id)) }
-//            stickers = ids.map {id -> ContextCompat.getDrawable(context,id) }
-//                    .map { image -> Sticker(image) }
             val options = BitmapFactory.Options()
 
 

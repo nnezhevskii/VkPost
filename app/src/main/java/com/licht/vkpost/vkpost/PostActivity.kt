@@ -9,7 +9,8 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.widget.ImageView
 import com.licht.vkpost.vkpost.data.model.*
-import com.licht.vkpost.vkpost.utils.RadialBlur
+import com.licht.vkpost.vkpost.utils.buildMatrix
+import com.licht.vkpost.vkpost.utils.isTapOnSticker
 import com.licht.vkpost.vkpost.view.BottomSheetFragment
 import com.licht.vkpost.vkpost.view.GestureHelper
 import com.licht.vkpost.vkpost.view.IPostView
@@ -39,19 +40,10 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
     }
 
-    fun isTapOnSticker(sticker: StickerItem, x: Int, y: Int): Boolean {
-        return x >= sticker.left && y >= sticker.top &&
-                x <= sticker.left + sticker.width && y <= sticker.top + sticker.height
-    }
-
     private fun getSelectedSticker(x: Int, y: Int): StickerItem? {
         return stickers.lastOrNull { stickerItem -> isTapOnSticker(stickerItem, x, y) }
     }
 
-    override fun onStart() {
-        super.onStart()
-
-    }
 
     private fun getBitmapFromResoure(id: Int): Bitmap = BitmapFactory.decodeResource(resources, id)
 
@@ -72,6 +64,8 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
                 getBitmapFromResoure(R.drawable.bg_beach_bottom)
         ))
 
+        initializeTrashIcons()
+
         val rvBackground = findViewById<RecyclerView>(R.id.rv_background)
         val adapter = BackgroundAdapter(this);
         val layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
@@ -80,39 +74,18 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         adapter.setData(colors)
     }
 
-    fun redrawStickers() {
-        val bitmap = (ivPost.drawable as BitmapDrawable).bitmap
-        val canvas = Canvas(bitmap)
+//    fun redrawStickers() {
+//        val bitmap = (ivPost.drawable as BitmapDrawable).bitmap
+//        val canvas = Canvas(bitmap)
+//
+//        stickers.forEach { sticker -> drawSticker(canvas, sticker) }
+//
+//
+//        ivPost.setImageBitmap(bitmap)
+//
+//        drawTrash()
+//    }
 
-        stickers.forEach { sticker -> drawSticker(canvas, sticker) }
-
-
-        ivPost.setImageBitmap(bitmap)
-
-        drawTrash()
-    }
-
-    private fun drawSticker(canvas: Canvas, sticker: StickerItem) = with(sticker.sticker.resource) {
-        val isSelectedSticker: Boolean = selectedItem?.let { it == sticker } ?: false
-        if (isSelectedSticker)
-            canvas.drawBitmap(this, buildMatrix(this, sticker), null)
-        else
-            canvas.drawBitmap(RadialBlur.doRadialBlur(this, 400, 400, 0.02f), buildMatrix(this, sticker), null)
-
-    }
-
-    private fun buildMatrix(bitmap: Bitmap, sticker: StickerItem): Matrix {
-
-        val dx = bitmap.width * sticker.scaleFactor.toFloat() - bitmap.width
-        val dy = bitmap.height * sticker.scaleFactor.toFloat() - bitmap.height
-
-        val matrix = Matrix()
-        matrix.postRotate(sticker.angle, bitmap.width / 2f, bitmap.height / 2f)
-        matrix.postScale(sticker.scaleFactor.toFloat(), sticker.scaleFactor.toFloat())
-        matrix.postTranslate(sticker.left.toFloat() - dx / 2, sticker.top.toFloat() - dy / 2)
-
-        return matrix
-    }
 
     fun addSticker(sticker: Sticker) {
         val bitmap = (ivPost.drawable as BitmapDrawable).bitmap
@@ -123,83 +96,19 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
         stickers.add(stickerItem)
 
-        redrawStickers()
+        redraw()
 
     }
 
-    private lateinit var background: BackgroundWrapper
+    private lateinit var background: Bitmap
     override fun setBackground(background: BackgroundWrapper) {
-        this.background = background
-        redrawBackground()
+        this.background = background.buildBitmap(ivPost.width, ivPost.height)
+        redraw()
     }
 
-    //background.drawOn(ivPost)
-    private fun redrawBackground() {
-        background.drawOn(ivPost, ivPost.width,ivPost.height)
-        redrawStickers()
-
-    }
 
     private var isTrashShowed: Boolean = false
     private var isTrashActivated: Boolean = false
-
-    private var trashLeft = 0
-    private var trashTop = 0
-    private var trashRight = 0
-    private var trashBottom = 0
-
-    private fun drawTrash() {
-        if (!isTrashShowed)
-            return
-
-        val bitmap = (ivPost.drawable as BitmapDrawable).bitmap
-        val canvas = Canvas(bitmap)
-
-        var xCenter: Float = 0f
-        var yCenter: Float = 0f
-        var rad: Float = 0f
-
-        if (isTrashActivated) {
-
-            xCenter = bitmap.width / 2f
-            yCenter = bitmap.height - 150f
-            rad = 167f
-            trashLeft = xCenter.toInt() - 125
-            trashTop = yCenter.toInt() - 125
-            trashRight = xCenter.toInt() + 125
-            trashBottom = yCenter.toInt() + 125
-
-        } else {
-            xCenter = bitmap.width / 2f
-            yCenter = bitmap.height - 150f
-
-            trashLeft = xCenter.toInt() - 75
-            trashTop = yCenter.toInt() - 75
-            trashRight = xCenter.toInt() + 75
-            trashBottom = yCenter.toInt() + 75
-
-            rad = 100f
-        }
-
-
-        val closedTrashImage = BitmapFactory.decodeResource(applicationContext.resources, R.drawable.ic_fab_trash)
-        val openedTrashImage = BitmapFactory.decodeResource(applicationContext.resources, R.drawable.ic_fab_trash_released)
-
-        val paint = Paint()
-        paint.color = Color.WHITE
-
-        val src = Rect(0, 0, closedTrashImage.width, closedTrashImage.height)
-        val dst = Rect(trashLeft, trashTop, trashRight, trashBottom)
-
-        canvas.drawCircle(xCenter, yCenter, rad, paint)
-        if (isTrashActivated)
-            canvas.drawBitmap(openedTrashImage, src, dst, null)
-        else
-            canvas.drawBitmap(closedTrashImage, src, dst, null)
-
-
-        ivPost.setImageBitmap(bitmap)
-    }
 
     override fun selectItem(x: Int, y: Int) {
         selectedItem = getSelectedSticker(x, y)
@@ -215,7 +124,7 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         selectedItem = null
         isTrashShowed = false
 
-        redrawBackground()
+        redraw()
     }
 
 //    isTrashActivated
@@ -230,12 +139,12 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
         isTrashActivated = isIntersectingWithTrashButton(actualX, actualY)
 
-        redrawBackground()
+        redraw()
     }
 
     fun isIntersectingWithTrashButton(actualX: Int, actualY: Int): Boolean {
-        return actualX in trashLeft..trashRight &&
-                actualY in trashTop..trashBottom
+        return actualX in trashLocation.left..trashLocation.right &&
+                actualY in trashLocation.top..trashLocation.bottom
     }
 
     override fun scale(factor: Float, angle: Float) {
@@ -256,7 +165,7 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
             item.scaleFactor *= factor
 
 
-        redrawBackground()
+        redraw()
 
     }
 
@@ -266,10 +175,95 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
             stickers.add(it)
 
             isTrashShowed = true
-            redrawBackground()
+            redraw()
         }
-
 
     }
 
+    private fun redraw() {
+        if ((ivPost.drawable as? BitmapDrawable)?.bitmap == null) {
+            val bitmap = Bitmap.createBitmap(ivPost.width, ivPost.height, Bitmap.Config.ARGB_8888)
+            ivPost.setImageBitmap(bitmap)
+        }
+
+
+        val canvas = Canvas((ivPost.drawable as BitmapDrawable).bitmap)
+        redrawBackground(canvas)
+        redrawStickers(canvas)
+        redrawTrash(canvas)
+
+        ivPost.invalidate()
+    }
+
+    private fun redrawBackground(canvas: Canvas) {
+        canvas.drawBitmap(background, 0f, 0f, null)
+    }
+
+    private fun redrawStickers(canvas: Canvas) {
+        stickers.forEach { sticker -> drawSticker(canvas, sticker) }
+    }
+
+    private lateinit var closedTrashBitmap: Bitmap
+    private lateinit var openedTrashBitmap: Bitmap
+
+    private lateinit var trashLocation: RectF
+
+    private fun redrawTrash(canvas: Canvas) {
+        if (!isTrashShowed)
+            return
+
+        val bottomPadding = resources.getDimension(R.dimen.trash_padding_bottom)
+
+        if (isTrashActivated) {
+            val left = ivPost.width / 2f - openedTrashBitmap.width / 2f
+            val top = ivPost.height - openedTrashBitmap.height.toFloat() - bottomPadding
+
+            canvas.drawBitmap(openedTrashBitmap, left, top, null)
+        } else {
+
+            val left = ivPost.width / 2f - closedTrashBitmap.width / 2f
+            val top = ivPost.height - closedTrashBitmap.height.toFloat() - bottomPadding
+            val right = left + closedTrashBitmap.width
+            val bottom = top + closedTrashBitmap.height.toFloat()
+
+            trashLocation = RectF(left, top, right, bottom)
+
+            canvas.drawBitmap(closedTrashBitmap, ivPost.width / 2f - closedTrashBitmap.width / 2f,
+                    ivPost.height - closedTrashBitmap.height.toFloat() - bottomPadding, null)
+        }
+    }
+
+    private fun initializeTrashIcons() {
+        val radius = resources.getDimension(R.dimen.closed_trash_radius)
+        closedTrashBitmap = buildTrashBitmap(radius)
+        openedTrashBitmap = buildTrashBitmap(radius * 1.1f)
+
+    }
+
+    private fun buildTrashBitmap(radius: Float): Bitmap {
+
+        val bitmap = Bitmap.createBitmap(2 * radius.toInt(), 2 * radius.toInt(), Bitmap.Config.ARGB_8888)
+        val innerPadding = resources.getDimension(R.dimen.trash_inner_padding)
+        val paintWhite = Paint()
+        paintWhite.color = Color.WHITE
+
+        val closedTrashImage = BitmapFactory.decodeResource(applicationContext.resources, R.drawable.ic_fab_trash)
+        val src = RectF(0f, 0f, closedTrashImage.width.toFloat(), closedTrashImage.height.toFloat())
+        val dst = RectF(innerPadding, innerPadding, bitmap.width - innerPadding.toFloat(), bitmap.height - innerPadding.toFloat())
+        val mat = Matrix()
+        mat.setRectToRect(src, dst, Matrix.ScaleToFit.FILL)
+        with(Canvas(bitmap)) {
+            drawCircle(radius, radius, radius, paintWhite)
+            drawBitmap(closedTrashImage, mat, null)
+        }
+
+        return bitmap
+    }
+
 }
+
+private fun drawSticker(canvas: Canvas, sticker: StickerItem) = with(sticker.sticker.resource) {
+    canvas.drawBitmap(this, buildMatrix(this, sticker), null)
+}
+
+

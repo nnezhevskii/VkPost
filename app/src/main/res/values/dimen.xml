@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="closed_trash_radius">40dp</dimen>
+    <dimen name="trash_padding_bottom">20dp</dimen>
+    <dimen name="trash_inner_padding">15dp</dimen>
+</resources>

@@ -1,6 +1,9 @@
 package com.licht.vkpost.vkpost
 
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -8,7 +11,6 @@ import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.util.Log
 import android.widget.ImageView
 import com.licht.vkpost.vkpost.data.model.ColorWrapper
 import com.licht.vkpost.vkpost.data.model.Sticker
@@ -19,7 +21,6 @@ import com.licht.vkpost.vkpost.view.BottomSheetFragment
 import com.licht.vkpost.vkpost.view.GestureHelper
 import com.licht.vkpost.vkpost.view.IPostView
 import com.licht.vkpost.vkpost.view.ItemManipulator
-
 
 
 class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
@@ -76,37 +77,27 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         val bitmap = (ivPost.drawable as BitmapDrawable).bitmap
         val canvas = Canvas(bitmap)
 
-        stickers.forEach { sticker ->
-            drawSticker(canvas, sticker)
-        }
+        stickers.forEach { sticker -> drawSticker(canvas, sticker) }
 
 
         ivPost.setImageBitmap(bitmap)
     }
 
-    private fun drawSticker(canvas: Canvas, sticker: StickerItem) {
+    private fun drawSticker(canvas: Canvas, sticker: StickerItem) = with(sticker.sticker.resource) {
+        canvas.drawBitmap(this, buildMatrix(this, sticker), null)
+    }
 
-        val src: Rect = Rect(0, 0, sticker.sticker.resource.width, sticker.sticker.resource.height)
-        val dst: RectF = RectF(sticker.left.toFloat(), sticker.top.toFloat(),
-                (sticker.left + sticker.width).toFloat(), (sticker.top + sticker.height).toFloat())
-        canvas.drawBitmap(sticker.sticker.resource, src, dst, null)
+    private fun buildMatrix(bitmap: Bitmap, sticker: StickerItem): Matrix {
 
-//        val bitmap = sticker.sticker.resource
-//        val matrix = Matrix()
-//        val rect = Rect(0, 0, bitmap.width, bitmap.height)
-//        val px = rect.exactCenterX()
-//        val py = rect.exactCenterY()
-//        matrix.postTranslate(-bitmap.getWidth() / 2f, -bitmap.getHeight() / 2f)
-//        matrix.postRotate(sticker.angle)
-//        matrix.postTranslate(px, py)
-//        canvas.drawBitmap(bitmap, matrix, null)
-//        matrix.reset()
+        val dx = bitmap.width * sticker.scaleFactor.toFloat() - bitmap.width
+        val dy = bitmap.height * sticker.scaleFactor.toFloat() - bitmap.height
 
+        val matrix = Matrix()
+        matrix.postRotate(sticker.angle, bitmap.width / 2f, bitmap.height / 2f)
+        matrix.postScale(sticker.scaleFactor.toFloat(), sticker.scaleFactor.toFloat())
+        matrix.postTranslate(sticker.left.toFloat() - dx / 2, sticker.top.toFloat() - dy / 2)
 
-//        canvas.save(Canvas.MATRIX_SAVE_FLAG); //Saving the canvas and later restoring it so only this image will be rotated.
-//        canvas.rotate(sticker.angle);
-
-//        canvas.restore()
+        return matrix
     }
 
     fun addSticker(sticker: Sticker) {
@@ -147,16 +138,13 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
     override fun selectItem(x: Int, y: Int) {
         selectedItem = getSelectedSticker(x, y)
-        log("selectItem($x, $y). Selected item: " + (selectedItem?.sticker?.title ?: "<nothing>"))
     }
 
     override fun releaseItem() {
         selectedItem = null
-        log("releaseItem")
     }
 
     override fun moveTo(actualX: Int, actualY: Int, dx: Int, dy: Int) {
-        log("moveTo: ($actualX, $actualY, $dx, $dy)")
         if (selectedItem == null)
             return
 
@@ -168,31 +156,25 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     }
 
     override fun scale(factor: Float, angle: Float) {
-        log("scale: $factor")
         if (selectedItem == null)
             return
 
         val item = selectedItem!!
 
-        val oldWidth = item.width
-        val oldHeight = item.height
+        if (item.angle == 0f)
+            item.angle = angle
+        else
+            item.angle += angle
 
-        item.width = (item.width * factor).toInt()
-        item.height = (item.height * factor).toInt()
 
-        val diffWidth = item.width - oldWidth
-        val diffHeight = item.height - oldHeight
+        if (item.scaleFactor == 0.0) {
+            item.scaleFactor = factor.toDouble()
+        } else
+            item.scaleFactor *= factor
 
-        item.left -= diffWidth / 2
-        item.top -= diffHeight / 2
-
-        item.angle = angle
 
         redrawBackground()
 
     }
 
-    private fun log(message: String) {
-        Log.e("PostActivity", message)
-    }
 }

@@ -5,4 +5,5 @@ data class StickerItem(var sticker: Sticker,
                        var top: Int,
                        var width: Int,
                        var height: Int,
-                       var angle: Float = 0f)
+                       var angle: Float = 0f,
+                       var scaleFactor: Double = 1.0)

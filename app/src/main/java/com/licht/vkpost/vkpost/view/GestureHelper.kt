@@ -18,15 +18,11 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
 
     private var mViewScaledTouchSlop = 0
 
-    private var oneFingerActionBlock: Boolean = false
-    private var twoFingerActionBlock: Boolean = false
 
     private var x = 0
     private var y = 0
     private var distance = 0f
-
-    private var positionFinger1: Pair<Float, Float> = Pair(0f, 0f)
-    private var positionFinger2: Pair<Float, Float> = Pair(0f, 0f)
+    private var currentAngle = 0f
 
     init {
         view.setOnTouchListener(this)
@@ -52,7 +48,6 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
                     x = mPrimStartTouchEventX.toInt()
                     y = mPrimStartTouchEventY.toInt()
 
-                    positionFinger1 = Pair(mPrimStartTouchEventX, mPrimStartTouchEventY)
 
                     notifyItemSelect(event.x.toInt(), event.y.toInt())
                 }
@@ -61,8 +56,9 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
                     mSecStartTouchEventX = event.getX(1)
                     mSecStartTouchEventY = event.getY(1)
                     mPrimSecStartTouchDistance = distance(event, 0, 1)
-                    positionFinger2 = Pair(mSecStartTouchEventX, mSecStartTouchEventY)
+
                     distance = mPrimSecStartTouchDistance
+                    currentAngle = rotation(event)
                     Log.d("TAG", String.format("POINTER TWO X = %.5f, Y = %.5f", mSecStartTouchEventX, mSecStartTouchEventY))
                     selectTwoFingersItem()
                 }
@@ -111,17 +107,12 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
     }
 
     private fun handleTwoFingerAction(event: MotionEvent) {
-        val oldFingerPosition1 = positionFinger1
-        val oldFingerPosition2 = positionFinger2
-
-        positionFinger1 = Pair(event.getX(0), event.getY(0))
-        positionFinger2 = Pair(event.getX(1), event.getY(1))
-
         val oldDistance = distance
         distance = distance(event, 0, 1)
-        val angle = rotation(event)
-        Log.e("GestureHelper", "angle: " + angle)
-        notifyItemScaleAndRotate(distance / oldDistance, angle)
+        val oldAngle = currentAngle
+        currentAngle = rotation(event)
+
+        notifyItemScaleAndRotate(distance / oldDistance, currentAngle - oldAngle)
     }
 
     private fun rotation(event: MotionEvent): Float {
@@ -131,16 +122,6 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
         return Math.toDegrees(radians).toFloat()
     }
 
-    /**
-     * @return The selected quadrant.
-     */
-    private fun getQuadrant(x: Double, y: Double): Int {
-        return if (x >= 0) {
-            if (y >= 0) 1 else 4
-        } else {
-            if (y >= 0) 2 else 3
-        }
-    }
 
     private fun isScrollGesture(event: MotionEvent, ptrIndex: Int, originalX: Float, originalY: Float): Boolean {
         val moveX = Math.abs(event.getX(ptrIndex) - originalX)
@@ -157,15 +138,10 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
             val diffSecX = mSecStartTouchEventX - event.getX(1)
             val diffSecY = mSecStartTouchEventY - event.getY(1)
 
-            if (// if the distance between the two fingers has increased past
-            // our threshold
-                    Math.abs(distanceCurrent - mPrimSecStartTouchDistance) > mViewScaledTouchSlop
-// and the fingers are moving in opposing directions
+            if (Math.abs(distanceCurrent - mPrimSecStartTouchDistance) > mViewScaledTouchSlop
                     && diffPrimY * diffSecY <= 0
-                    && diffPrimX * diffSecX <= 0) {
-                // mPinchClamp = false; // don't clamp initially
+                    && diffPrimX * diffSecX <= 0)
                 return true
-            }
         }
 
         return false
@@ -198,16 +174,17 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
     }
 
     private fun notifyItemRelease() {
-        oneFingerActionBlock = false
         listeners.forEach { listener -> listener.releaseItem() }
     }
 
     private fun notifyItemMovedTo(actualX: Int, actualY: Int, dx: Int, dy: Int) {
-        oneFingerActionBlock = true
         listeners.forEach { listener -> listener.moveTo(actualX, actualY, dx, dy) }
     }
 }
 
+/**
+ * Подписчик на обрабатываемые действия
+ */
 interface ItemManipulator {
     fun selectItem(x: Int, y: Int)
     fun moveTo(actualX: Int, actualY: Int, dx: Int, dy: Int)

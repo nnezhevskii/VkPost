@@ -1,18 +1,34 @@
 package com.licht.vkpost.vkpost;
 
 import android.content.Context;
-import android.graphics.*;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
-import android.widget.FrameLayout;
+import android.widget.ImageView;
 
-public class RoundedCornerLayout extends FrameLayout {
+public class RoundedCornerLayout extends ImageView {
     private final static float CORNER_RADIUS = 10.0f;
 
     private Bitmap maskBitmap;
     private Paint paint, maskPaint;
     private float cornerRadius;
+
+    private boolean selectedItem = false;
+
+    public boolean isSelectedItem() {
+        return selectedItem;
+    }
+
+    public void setSelectedItem(boolean selectedItem) {
+        this.selectedItem = selectedItem;
+    }
 
     public RoundedCornerLayout(Context context) {
         super(context);

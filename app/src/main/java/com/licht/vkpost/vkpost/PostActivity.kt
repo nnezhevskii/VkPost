@@ -2,18 +2,14 @@ package com.licht.vkpost.vkpost
 
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.widget.ImageView
-import com.licht.vkpost.vkpost.data.model.ColorWrapper
-import com.licht.vkpost.vkpost.data.model.Sticker
-import com.licht.vkpost.vkpost.data.model.StickerItem
-import com.licht.vkpost.vkpost.utils.getBrighterColor
-import com.licht.vkpost.vkpost.utils.getLessColor
+import com.licht.vkpost.vkpost.data.model.*
+import com.licht.vkpost.vkpost.utils.RadialBlur
 import com.licht.vkpost.vkpost.view.BottomSheetFragment
 import com.licht.vkpost.vkpost.view.GestureHelper
 import com.licht.vkpost.vkpost.view.IPostView
@@ -55,15 +51,29 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     override fun onStart() {
         super.onStart()
 
-        val colors: MutableList<ColorWrapper> = mutableListOf<Int>(
+    }
+
+    private fun getBitmapFromResoure(id: Int): Bitmap = BitmapFactory.decodeResource(resources, id)
+
+    override fun onPostResume() {
+        super.onPostResume()
+
+        val colors: MutableList<BackgroundWrapper> = mutableListOf<Int>(
                 R.color.colorAccent, R.color.colorPrimary, R.color.colorPrimaryDark)
                 .map { id -> ContextCompat.getColor(applicationContext, id) }
                 .map { color -> ColorWrapper(color) }.toMutableList()
         colors.add(ColorWrapper(Color.RED))
         colors.add(ColorWrapper(Color.YELLOW))
+        colors.add(ImageWrapper(getBitmapFromResoure(R.drawable.bg_stars_center)))
+
+        colors.add(CompoundImageWrapper(
+                getBitmapFromResoure(R.drawable.bg_beach_center),
+                getBitmapFromResoure(R.drawable.bg_beach_top),
+                getBitmapFromResoure(R.drawable.bg_beach_bottom)
+        ))
 
         val rvBackground = findViewById<RecyclerView>(R.id.rv_background)
-        val adapter = ColorAdapter(this);
+        val adapter = BackgroundAdapter(this);
         val layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         rvBackground.adapter = adapter
         rvBackground.layoutManager = layoutManager
@@ -83,7 +93,12 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     }
 
     private fun drawSticker(canvas: Canvas, sticker: StickerItem) = with(sticker.sticker.resource) {
-        canvas.drawBitmap(this, buildMatrix(this, sticker), null)
+        val isSelectedSticker: Boolean = selectedItem?.let { it == sticker } ?: false
+        if (isSelectedSticker)
+            canvas.drawBitmap(this, buildMatrix(this, sticker), null)
+        else
+            canvas.drawBitmap(RadialBlur.doRadialBlur(this, 400, 400, 0.02f), buildMatrix(this, sticker), null)
+
     }
 
     private fun buildMatrix(bitmap: Bitmap, sticker: StickerItem): Matrix {
@@ -112,26 +127,15 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
     }
 
-    private lateinit var background: ColorWrapper
-    override fun setBackground(background: ColorWrapper) {
+    private lateinit var background: BackgroundWrapper
+    override fun setBackground(background: BackgroundWrapper) {
         this.background = background
         redrawBackground()
     }
 
+    //background.drawOn(ivPost)
     private fun redrawBackground() {
-        val bitmap = Bitmap.createBitmap(ivPost.width, ivPost.height, Bitmap.Config.ARGB_8888)
-        ivPost.setImageBitmap(bitmap)
-
-        val color1 = getBrighterColor(background.color)
-        val color2 = getLessColor(background.color)
-
-        val gd = GradientDrawable(
-                GradientDrawable.Orientation.TL_BR,
-                intArrayOf(color1, color2))
-        gd.cornerRadius = 0f
-
-        ivPost.background = gd
-
+        background.drawOn(ivPost, ivPost.width,ivPost.height)
         redrawStickers()
 
     }
@@ -160,13 +164,12 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
             xCenter = bitmap.width / 2f
             yCenter = bitmap.height - 150f
             rad = 167f
-            trashLeft = xCenter.toInt()   - 125
-            trashTop = yCenter.toInt()    - 125
-            trashRight = xCenter.toInt()  + 125
+            trashLeft = xCenter.toInt() - 125
+            trashTop = yCenter.toInt() - 125
+            trashRight = xCenter.toInt() + 125
             trashBottom = yCenter.toInt() + 125
 
-        }
-        else {
+        } else {
             xCenter = bitmap.width / 2f
             yCenter = bitmap.height - 150f
 
@@ -177,7 +180,6 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
             rad = 100f
         }
-
 
 
         val closedTrashImage = BitmapFactory.decodeResource(applicationContext.resources, R.drawable.ic_fab_trash)

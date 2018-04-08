@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.provider.MediaStore
 import android.renderscript.Element
 import android.renderscript.RenderScript
 import android.renderscript.ScriptIntrinsicBlur
@@ -54,7 +55,6 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         findViewById<Button>(R.id.btn_save).setOnClickListener {
             if (appHasWriteExternalStoragePermission(applicationContext))
                 saveImage(applicationContext, getBitmap(), "post-${Date()}")
-
             else
                 requestPermission(this,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -70,6 +70,17 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
             WRITE_EXTERNAL_STORAGE_REQUEST_CODE ->
                 if (resultCode == Activity.RESULT_OK)
                     saveImage(applicationContext, getBitmap(), "post-${Date()}")
+
+            PICK_IMAGE -> {
+                data?.let {
+                    background = MediaStore.Images.Media.getBitmap(this.contentResolver, data.data)
+                     redraw()
+                }
+//                val temp = 0
+//                saveImage(applicationContext, getBitmap(), "post-${Date()}")
+
+            }
+
             else ->
                 super.onActivityResult(requestCode, resultCode, data)
         }
@@ -80,8 +91,6 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     }
 
 
-    private fun getBitmapFromResoure(id: Int): Bitmap = BitmapFactory.decodeResource(resources, id)
-
     override fun onPostResume() {
         super.onPostResume()
 
@@ -91,13 +100,15 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
                 .map { color -> ColorWrapper(color) }.toMutableList()
         colors.add(ColorWrapper(Color.RED))
         colors.add(ColorWrapper(Color.YELLOW))
-        colors.add(ImageWrapper(getBitmapFromResoure(R.drawable.bg_stars_center)))
+        colors.add(ImageWrapper(getBitmapFromResoure(resources, R.drawable.bg_stars_center)))
 
         colors.add(CompoundImageWrapper(
-                getBitmapFromResoure(R.drawable.bg_beach_center),
-                getBitmapFromResoure(R.drawable.bg_beach_top),
-                getBitmapFromResoure(R.drawable.bg_beach_bottom)
+                getBitmapFromResoure(resources, R.drawable.bg_beach_center),
+                getBitmapFromResoure(resources, R.drawable.bg_beach_top),
+                getBitmapFromResoure(resources, R.drawable.bg_beach_bottom)
         ))
+
+        colors.add(AddImageCommandWrapper())
 
         initializeTrashIcons()
 
@@ -128,12 +139,21 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
     }
 
+    private val PICK_IMAGE = 1
+
     private fun getBitmap() = (ivPost.drawable as BitmapDrawable).bitmap
 
     private lateinit var background: Bitmap
     override fun setBackground(background: BackgroundWrapper) {
         this.background = background.buildBitmap(ivPost.width, ivPost.height)
         redraw()
+    }
+
+    override fun onCommandClick(background: BackgroundWrapper) {
+        val intent = Intent()
+        intent.type = "image/*"
+        intent.action = Intent.ACTION_GET_CONTENT
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE)
     }
 
 
@@ -226,7 +246,11 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     }
 
     private fun redrawBackground(canvas: Canvas) {
-        canvas.drawBitmap(background, 0f, 0f, null)
+        val src = RectF(0f, 0f, background.width.toFloat(), background.height.toFloat())
+        val dst = RectF(0f,0f,canvas.width.toFloat(), canvas.height.toFloat())
+        val mat = Matrix()
+        mat.setRectToRect(src, dst, Matrix.ScaleToFit.FILL)
+        canvas.drawBitmap(background, mat, null)
     }
 
     private fun redrawStickers(canvas: Canvas) {

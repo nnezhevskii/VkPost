@@ -1,11 +1,15 @@
 package com.licht.vkpost.vkpost.utils
 
 import android.content.Context
+import android.content.res.Resources
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import android.util.TypedValue
+import com.licht.vkpost.vkpost.App
 import com.licht.vkpost.vkpost.data.model.StickerItem
 import java.io.File
 import java.io.FileOutputStream
@@ -36,5 +40,11 @@ public fun saveImage(context: Context, finalBitmap: Bitmap, image_name: String) 
             finalBitmap,
             image_name, ""
     );
-
 }
+
+fun dpToPx(dp: Int): Int {
+    val r = App.application.getResources()
+    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp.toFloat(), r.getDisplayMetrics()).toInt()
+}
+
+fun getBitmapFromResoure(resources: Resources, id: Int): Bitmap = BitmapFactory.decodeResource(resources, id)

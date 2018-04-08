@@ -1,10 +1,12 @@
 package com.licht.vkpost.vkpost.data.model
 
 import android.graphics.*
+import android.support.v4.content.ContextCompat
 import android.util.Log
-import android.util.TypedValue
 import android.widget.ImageView
 import com.licht.vkpost.vkpost.App
+import com.licht.vkpost.vkpost.R
+import com.licht.vkpost.vkpost.utils.getBitmapFromResoure
 import com.licht.vkpost.vkpost.utils.getBrighterColor
 import com.licht.vkpost.vkpost.utils.getLessColor
 
@@ -13,12 +15,10 @@ sealed class BackgroundWrapper {
     fun drawOn(imageView: ImageView, width: Int, height: Int) {
         imageView.setImageBitmap(buildBitmap(width, height))
     }
-    abstract fun buildBitmap(width: Int, height: Int): Bitmap
-}
 
-fun dpToPx(dp: Int): Int {
-    val r = App.application.getResources()
-    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp.toFloat(), r.getDisplayMetrics()).toInt()
+    open fun isCommandItem(): Boolean = false
+
+    abstract fun buildBitmap(width: Int, height: Int): Bitmap
 }
 
 data class ColorWrapper(val color: Int) : BackgroundWrapper() {
@@ -60,7 +60,6 @@ data class ImageWrapper(val bitmap: Bitmap) : BackgroundWrapper() {
 data class CompoundImageWrapper(val background: Bitmap,
                                 val top: Bitmap,
                                 val bottom: Bitmap) : BackgroundWrapper() {
-
     override fun buildBitmap(width: Int, height: Int): Bitmap {
         Log.e("CompoundImageWrapper", "buildBitmap(${width}, ${height})")
         val backBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -88,4 +87,23 @@ data class CompoundImageWrapper(val background: Bitmap,
 
         return backBitmap
     }
+}
+
+class AddImageCommandWrapper(): BackgroundWrapper() {
+    override fun buildBitmap(width: Int, height: Int): Bitmap {
+        val backBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(backBitmap)
+
+        val context = App.application.applicationContext
+        val bitmap: Bitmap = getBitmapFromResoure(context.resources, R.drawable.ic_toolbar_new)
+//                ContextCompat.getDrawable(context, R.drawable.ic_toolbar_new)
+
+        val src = Rect(0, 0, bitmap.width, bitmap.height)
+        val dst = Rect(0, 0, width, height)
+        canvas.drawBitmap(bitmap, src, dst, null)
+
+        return bitmap.copy(Bitmap.Config.ARGB_8888, true)
+    }
+
+    override fun isCommandItem() = true
 }

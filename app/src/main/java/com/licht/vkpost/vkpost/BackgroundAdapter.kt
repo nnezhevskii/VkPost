@@ -2,16 +2,13 @@ package com.licht.vkpost.vkpost
 
 import android.content.Context
 import android.graphics.*
-import android.support.v4.content.ContextCompat
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import com.licht.vkpost.vkpost.data.model.BackgroundWrapper
-import com.licht.vkpost.vkpost.data.model.dpToPx
+import com.licht.vkpost.vkpost.utils.dpToPx
 import com.licht.vkpost.vkpost.view.IPostView
 
 
@@ -19,15 +16,22 @@ class BackgroundAdapter(private val postView: IPostView) : RecyclerView.Adapter<
 
     private var selectedPosition: Int? = null
 
-    private val item: MutableList<BackgroundWrapper> = mutableListOf()
+    private val items: MutableList<BackgroundWrapper> = mutableListOf()
     private lateinit var context: Context
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ColorViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_background_color, parent, false)
         val cvh = ColorViewHolder(view);
         cvh.view.setOnClickListener{
-            selectedPosition = cvh.adapterPosition
-            postView.setBackground(item[cvh.adapterPosition])
-            onItemSelected()
+            val item = items[cvh.adapterPosition]
+            if (item.isCommandItem()) {
+                postView.onCommandClick(item)
+            }
+            else {
+                selectedPosition = cvh.adapterPosition
+                postView.setBackground(items[cvh.adapterPosition])
+                onItemSelected()
+            }
+
         }
         context = parent.context
         return cvh
@@ -61,15 +65,15 @@ class BackgroundAdapter(private val postView: IPostView) : RecyclerView.Adapter<
     }
 
     override fun onBindViewHolder(holder: ColorViewHolder, position: Int) {
-        holder.bind(item[position])
+        holder.bind(items[position])
         onItemSelected()
     }
 
-    override fun getItemCount(): Int = item.size
+    override fun getItemCount(): Int = items.size
 
     fun setData(items: List<BackgroundWrapper>) {
-        this.item.clear()
-        this.item.addAll(items)
+        this.items.clear()
+        this.items.addAll(items)
         notifyDataSetChanged()
     }
 

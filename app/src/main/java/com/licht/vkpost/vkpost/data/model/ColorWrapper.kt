@@ -1,13 +1,14 @@
 package com.licht.vkpost.vkpost.data.model
 
 import android.graphics.*
+import android.util.Log
 import android.util.TypedValue
 import android.widget.ImageView
 import com.licht.vkpost.vkpost.App
 import com.licht.vkpost.vkpost.utils.getBrighterColor
 import com.licht.vkpost.vkpost.utils.getLessColor
 
-
+// todo lru cache
 sealed class BackgroundWrapper {
     fun drawOn(imageView: ImageView, width: Int, height: Int) {
         imageView.setImageBitmap(buildBitmap(width, height))
@@ -43,7 +44,7 @@ data class ColorWrapper(val color: Int) : BackgroundWrapper() {
 data class ImageWrapper(val bitmap: Bitmap) : BackgroundWrapper() {
 
     override fun buildBitmap(width: Int, height: Int): Bitmap {
-
+        Log.e("ImageWrapper", "buildBitmap(${width}, ${height})")
         val backBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(backBitmap)
 
@@ -61,7 +62,7 @@ data class CompoundImageWrapper(val background: Bitmap,
                                 val bottom: Bitmap) : BackgroundWrapper() {
 
     override fun buildBitmap(width: Int, height: Int): Bitmap {
-
+        Log.e("CompoundImageWrapper", "buildBitmap(${width}, ${height})")
         val backBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(backBitmap)
 

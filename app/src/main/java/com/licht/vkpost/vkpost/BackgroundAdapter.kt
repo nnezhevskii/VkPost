@@ -19,7 +19,6 @@ class BackgroundAdapter(private val postView: IPostView) : RecyclerView.Adapter<
 
     private var selectedPosition: Int? = null
 
-
     private val item: MutableList<BackgroundWrapper> = mutableListOf()
     private lateinit var context: Context
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ColorViewHolder {
@@ -64,7 +63,6 @@ class BackgroundAdapter(private val postView: IPostView) : RecyclerView.Adapter<
     override fun onBindViewHolder(holder: ColorViewHolder, position: Int) {
         holder.bind(item[position])
         onItemSelected()
-        Log.e("BA", "onBindViewHolder #${position}")
     }
 
     override fun getItemCount(): Int = item.size
@@ -77,6 +75,7 @@ class BackgroundAdapter(private val postView: IPostView) : RecyclerView.Adapter<
 
     inner class ColorViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
         private var backgroundWrapper: BackgroundWrapper? = null
+        private val item = view.findViewById<RoundedCornerLayout>(R.id.item)
         fun bind(backWrapper: BackgroundWrapper) {
             this.backgroundWrapper = backWrapper
             draw()
@@ -88,7 +87,7 @@ class BackgroundAdapter(private val postView: IPostView) : RecyclerView.Adapter<
 
             val backWrapper = backgroundWrapper!!
 
-            val isSelected = view.findViewById<RoundedCornerLayout>(R.id.item).isSelectedItem
+            val isSelected = item.isSelectedItem
             if (isSelected) {
                 val backBitmap = Bitmap.createBitmap(dpToPx(40), dpToPx(40), Bitmap.Config.ARGB_8888)
                 val canvas = Canvas(backBitmap)
@@ -102,8 +101,7 @@ class BackgroundAdapter(private val postView: IPostView) : RecyclerView.Adapter<
                 val rect: RectF = RectF(10f, 10f, canvas.width - 10f, canvas.height - 10f)
                 canvas.drawRoundRect(rect, 10f, 10f, myPaint)
 
-
-                view.findViewById<ImageView>(R.id.item).setImageBitmap(backBitmap)
+                item.setImageBitmap(backBitmap)
 
                 val bitmap = backWrapper.buildBitmap(dpToPx(40), dpToPx(40))
 
@@ -116,8 +114,7 @@ class BackgroundAdapter(private val postView: IPostView) : RecyclerView.Adapter<
             }
 
             else {
-                view.findViewById<ImageView>(R.id.item).setImageDrawable(ContextCompat.getDrawable(context, R.drawable.sticker1))
-                backWrapper.drawOn(view.findViewById<ImageView>(R.id.item), dpToPx(40), dpToPx(40))
+                backWrapper.drawOn(item, dpToPx(40), dpToPx(40))
             }
 
         }
@@ -125,7 +122,6 @@ class BackgroundAdapter(private val postView: IPostView) : RecyclerView.Adapter<
         fun updateSelection(isSelected: Boolean) {
             view.findViewById<RoundedCornerLayout>(R.id.item).isSelectedItem = isSelected
             draw()
-            Log.e("BackgroundAdapter", "For VH#${adapterPosition} isSelected: ${isSelected}")
         }
     }
 }

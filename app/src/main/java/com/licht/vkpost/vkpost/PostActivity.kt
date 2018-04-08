@@ -3,6 +3,10 @@ package com.licht.vkpost.vkpost
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.renderscript.Allocation
+import android.renderscript.Element
+import android.renderscript.RenderScript
+import android.renderscript.ScriptIntrinsicBlur
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
@@ -23,6 +27,8 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     var stickers: MutableList<StickerItem> = mutableListOf()
     private var selectedItem: StickerItem? = null
 
+    private lateinit var blurScript: ScriptIntrinsicBlur
+    private lateinit var script: RenderScript
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,8 +41,12 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
         }
 
-        val gestureHelper = GestureHelper(ivPost)
-        gestureHelper.addListener(this)
+        findViewById<ImageView>(R.id.iv_change_font).setOnClickListener {
+            mode = (mode + 1) % 3
+            redraw()
+        }
+
+        GestureHelper(ivPost).addListener(this)
 
     }
 
@@ -72,20 +82,13 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         rvBackground.adapter = adapter
         rvBackground.layoutManager = layoutManager
         adapter.setData(colors)
+
+//        final Allocation input = Allocation.createFromBitmap(renderScript, src);
+//        final Allocation output = Allocation.createTyped(renderScript, input.getType());
+        script = RenderScript.create(applicationContext)
+        blurScript = ScriptIntrinsicBlur.create(script, Element.U8_4(script));
+
     }
-
-//    fun redrawStickers() {
-//        val bitmap = (ivPost.drawable as BitmapDrawable).bitmap
-//        val canvas = Canvas(bitmap)
-//
-//        stickers.forEach { sticker -> drawSticker(canvas, sticker) }
-//
-//
-//        ivPost.setImageBitmap(bitmap)
-//
-//        drawTrash()
-//    }
-
 
     fun addSticker(sticker: Sticker) {
         val bitmap = (ivPost.drawable as BitmapDrawable).bitmap
@@ -126,8 +129,6 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
         redraw()
     }
-
-//    isTrashActivated
 
     override fun moveTo(actualX: Int, actualY: Int, dx: Int, dy: Int) {
         if (selectedItem == null)
@@ -190,7 +191,9 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         val canvas = Canvas((ivPost.drawable as BitmapDrawable).bitmap)
         redrawBackground(canvas)
         redrawStickers(canvas)
-        redrawTrash(canvas)
+//        redrawTrash(canvas)
+        redrawText(canvas)
+
 
         ivPost.invalidate()
     }
@@ -233,6 +236,135 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         }
     }
 
+    private var mode = 0
+
+    private fun redrawText(canvas: Canvas) {
+        val lines: List<String> = listOf<String>(
+                "Отправляюсь в отпуск",
+                "до 10 сентября. Отвечать",
+                "буду медленно. Если что-",
+                "то срочное, упоминайте в",
+                "беседах или звоните.")
+
+        if (mode == 0)
+            drawTextInMode1(canvas, lines)
+        else if (mode == 1)
+            drawTextInMode2(canvas, lines)
+        else if (mode == 2)
+            drawTextInMode3(canvas, lines)
+        else
+            throw IllegalStateException("invalid mode")
+
+//        val height = 24 * resources.displayMetrics.density
+//
+//        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+//        paint.color = Color.BLACK
+//        paint.textSize = height;
+//
+//        val textCenterX = canvas.width / 2
+//        val textCenterY = canvas.height / 2
+//
+//        var startY = textCenterY - (lines.size / 2) * height
+//
+//        val myPaint = Paint()
+//        myPaint.setColor(Color.WHITE)
+//
+//        for (i in 0..lines.size - 1) {
+//            val lineWidth = paint.measureText(lines[i])
+//
+//            val rect: RectF = RectF(textCenterX - lineWidth / 2 - 20,
+//                    startY - height / 2 - 25,
+//                    textCenterX + lineWidth / 2 + 20,
+//                    startY + height / 2)
+//
+//            canvas.drawRoundRect(rect, 20f, 20f, myPaint)
+//
+//            canvas.drawText(lines[i], textCenterX - lineWidth / 2.toFloat(), startY, paint)
+//            startY += height
+//        }
+
+//        val scale = resources.displayMetrics.density
+
+//
+//        paint.textSize = height;
+//
+//        val text = "Отправлять в отпуск"
+//        val width = paint.measureText(text)
+//
+//
+//
+//        val rect: RectF = RectF(canvas.width / 2 - width / 2 - 10,
+//                canvas.height / 2f - height - 20,
+//                canvas.width / 2 + width / 2 + 10,
+//                canvas.height / 2f + 20
+//                )
+//
+
+//
+//        canvas.drawText(text, canvas.width / 2 - width / 2, canvas.height / 2f - height / 2, paint)
+    }
+
+    private fun drawText(canvas: Canvas, lines: List<String>, textPaint: Paint, backPaint: Paint? = null) {
+        val height = 24 * resources.displayMetrics.density
+        val paddingBetweenLine = 4 * resources.displayMetrics.density
+
+        val textCenterX = canvas.width / 2
+        val textCenterY = canvas.height / 2
+
+        var startY = textCenterY - (lines.size / 2) * height
+
+
+        for (i in 0 until lines.size) {
+            val lineWidth = textPaint.measureText(lines[i])
+
+            backPaint?.let {
+                val rect: RectF = RectF(textCenterX - lineWidth / 2 - 20,
+                        startY - height / 2 - 25,
+                        textCenterX + lineWidth / 2 + 20,
+                        startY + height / 2 + paddingBetweenLine)
+
+                canvas.drawRoundRect(rect, 20f, 20f,it)
+            }
+
+            canvas.drawText(lines[i], textCenterX - lineWidth / 2.toFloat(), startY, textPaint)
+            startY += height + paddingBetweenLine
+        }
+    }
+
+    private fun drawTextInMode1(canvas: Canvas, lines: List<String>) {
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.color = Color.WHITE
+        paint.textSize = 24 * resources.displayMetrics.density;
+
+        drawText(canvas, lines, paint)
+    }
+
+    private fun drawTextInMode2(canvas: Canvas, lines: List<String>) {
+        val height = 24 * resources.displayMetrics.density
+
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.color = Color.BLACK
+        paint.textSize = height;
+
+        val myPaint = Paint()
+        myPaint.setColor(Color.WHITE)
+
+        drawText(canvas, lines, paint, myPaint)
+    }
+
+    private fun drawTextInMode3(canvas: Canvas, lines: List<String>) {
+        val height = 24 * resources.displayMetrics.density
+
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.color = Color.WHITE
+        paint.textSize = height;
+
+        val myPaint = Paint()
+        myPaint.setColor(Color.argb(64, 255, 255, 255))
+
+        drawText(canvas, lines, paint, myPaint)
+    }
+
     private fun initializeTrashIcons() {
         val radius = resources.getDimension(R.dimen.closed_trash_radius)
         closedTrashBitmap = buildTrashBitmap(radius)
@@ -260,10 +392,23 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         return bitmap
     }
 
-}
+    private fun drawSticker(canvas: Canvas, sticker: StickerItem) = with(sticker.sticker.resource) {
+//        val paint = Paint()
+////    paint.maskFilter = BlurMaskFilter(5f, BlurMaskFilter.Blur.NORMAL)
+//
+//        val input = Allocation.createFromBitmap(script, this);
+//        val output = Allocation.createTyped(script, input.getType());
+//
+//        val src = Bitmap.createBitmap(this)
+//
+//        blurScript.setRadius(8f);
+//        blurScript.setInput(input);
+//        blurScript.forEach(output);
+//        output.copyTo(src)
 
-private fun drawSticker(canvas: Canvas, sticker: StickerItem) = with(sticker.sticker.resource) {
-    canvas.drawBitmap(this, buildMatrix(this, sticker), null)
-}
+        canvas.drawBitmap(this, buildMatrix(this, sticker), null)
+    }
 
+
+}
 

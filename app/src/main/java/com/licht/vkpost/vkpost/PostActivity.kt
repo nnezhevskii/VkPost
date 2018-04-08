@@ -19,6 +19,8 @@ import com.licht.vkpost.vkpost.view.BottomSheetFragment
 import com.licht.vkpost.vkpost.view.GestureHelper
 import com.licht.vkpost.vkpost.view.IPostView
 import com.licht.vkpost.vkpost.view.ItemManipulator
+import kotlin.math.abs
+import kotlin.math.max
 
 
 class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
@@ -314,21 +316,62 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         var startY = textCenterY - (lines.size / 2) * height
 
 
-        for (i in 0 until lines.size) {
-            val lineWidth = textPaint.measureText(lines[i])
+        val combinedLines = combineLinesByWidth(textPaint, lines)
+
+
+        var index = 0
+        combinedLines.forEach { lineGroup->
 
             backPaint?.let {
-                val rect: RectF = RectF(textCenterX - lineWidth / 2 - 20,
-                        startY - height / 2 - 25,
-                        textCenterX + lineWidth / 2 + 20,
-                        startY + height / 2 + paddingBetweenLine)
+                val rect: RectF = RectF(textCenterX - lineGroup.first / 2f - 20,
+                        startY - height,
+                        textCenterX + lineGroup.first / 2f + 20,
+                        startY + (lineGroup.second.size - 1) * (paddingBetweenLine + height) + paddingBetweenLine)
 
+//                canvas.drawRect(rect, it)
                 canvas.drawRoundRect(rect, 20f, 20f,it)
             }
 
-            canvas.drawText(lines[i], textCenterX - lineWidth / 2.toFloat(), startY, textPaint)
-            startY += height + paddingBetweenLine
+            lineGroup.second.forEach {
+                canvas.drawText(lines[index++], textCenterX - lineGroup.first / 2.toFloat(), startY, textPaint)
+                startY += height + paddingBetweenLine
+            }
         }
+
+
+//        for (i in 0 until lines.size) {
+//            val lineWidth = textPaint.measureText(lines[i])
+////
+//
+//        }
+    }
+
+
+    private fun combineLinesByWidth(paint: Paint, lines: List<String>): List<Pair<Int, List<String>>> {
+        if (lines.isEmpty())
+            return emptyList()
+
+        val res: MutableList<Pair<Int, MutableList<String>>> = mutableListOf()
+
+        var crntWidth = paint.measureText(lines.first())
+        var crntGroup: MutableList<String> = mutableListOf()
+
+        for (line in lines) {
+            val width = paint.measureText(line)
+            if (abs(width - crntWidth) < 20) {
+                crntGroup.add(line)
+                crntWidth = max(width, crntWidth)
+            }
+            else {
+                res.add(Pair(crntWidth.toInt(), crntGroup))
+                crntWidth = width
+                crntGroup = mutableListOf(line)
+            }
+        }
+
+        res.add(Pair(crntWidth.toInt(), crntGroup))
+
+        return res
     }
 
     private fun drawTextInMode1(canvas: Canvas, lines: List<String>) {

@@ -1,9 +1,11 @@
 package com.licht.vkpost.vkpost
 
+import android.Manifest
+import android.app.Activity
+import android.content.Intent
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
-import android.renderscript.Allocation
 import android.renderscript.Element
 import android.renderscript.RenderScript
 import android.renderscript.ScriptIntrinsicBlur
@@ -11,14 +13,15 @@ import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.widget.Button
 import android.widget.ImageView
 import com.licht.vkpost.vkpost.data.model.*
-import com.licht.vkpost.vkpost.utils.buildMatrix
-import com.licht.vkpost.vkpost.utils.isTapOnSticker
+import com.licht.vkpost.vkpost.utils.*
 import com.licht.vkpost.vkpost.view.BottomSheetFragment
 import com.licht.vkpost.vkpost.view.GestureHelper
 import com.licht.vkpost.vkpost.view.IPostView
 import com.licht.vkpost.vkpost.view.ItemManipulator
+import java.util.*
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -48,8 +51,28 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
             redraw()
         }
 
+        findViewById<Button>(R.id.btn_save).setOnClickListener {
+            if (appHasWriteExternalStoragePermission(applicationContext))
+                saveImage(applicationContext, getBitmap(), "post-${Date()}")
+
+            else
+                requestPermission(this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        WRITE_EXTERNAL_STORAGE_REQUEST_CODE)
+        }
+
         GestureHelper(ivPost).addListener(this)
 
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        when (requestCode) {
+            WRITE_EXTERNAL_STORAGE_REQUEST_CODE ->
+                if (resultCode == Activity.RESULT_OK)
+                    saveImage(applicationContext, getBitmap(), "post-${Date()}")
+            else ->
+                super.onActivityResult(requestCode, resultCode, data)
+        }
     }
 
     private fun getSelectedSticker(x: Int, y: Int): StickerItem? {
@@ -93,7 +116,7 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     }
 
     fun addSticker(sticker: Sticker) {
-        val bitmap = (ivPost.drawable as BitmapDrawable).bitmap
+        val bitmap = getBitmap()
         val stickerItem = StickerItem(
                 sticker,
                 bitmap.width / 4, bitmap.height / 4,
@@ -104,6 +127,8 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         redraw()
 
     }
+
+    private fun getBitmap() = (ivPost.drawable as BitmapDrawable).bitmap
 
     private lateinit var background: Bitmap
     override fun setBackground(background: BackgroundWrapper) {
@@ -193,7 +218,7 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         val canvas = Canvas((ivPost.drawable as BitmapDrawable).bitmap)
         redrawBackground(canvas)
         redrawStickers(canvas)
-//        redrawTrash(canvas)
+        redrawTrash(canvas)
         redrawText(canvas)
 
 
@@ -320,7 +345,7 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
 
         var index = 0
-        combinedLines.forEach { lineGroup->
+        combinedLines.forEach { lineGroup ->
 
             backPaint?.let {
                 val rect: RectF = RectF(textCenterX - lineGroup.first / 2f - 20,
@@ -329,7 +354,7 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
                         startY + (lineGroup.second.size - 1) * (paddingBetweenLine + height) + paddingBetweenLine)
 
 //                canvas.drawRect(rect, it)
-                canvas.drawRoundRect(rect, 20f, 20f,it)
+                canvas.drawRoundRect(rect, 20f, 20f, it)
             }
 
             lineGroup.second.forEach {
@@ -361,8 +386,7 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
             if (abs(width - crntWidth) < 20) {
                 crntGroup.add(line)
                 crntWidth = max(width, crntWidth)
-            }
-            else {
+            } else {
                 res.add(Pair(crntWidth.toInt(), crntGroup))
                 crntWidth = width
                 crntGroup = mutableListOf(line)
@@ -436,7 +460,7 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     }
 
     private fun drawSticker(canvas: Canvas, sticker: StickerItem) = with(sticker.sticker.resource) {
-//        val paint = Paint()
+        //        val paint = Paint()
 ////    paint.maskFilter = BlurMaskFilter(5f, BlurMaskFilter.Blur.NORMAL)
 //
 //        val input = Allocation.createFromBitmap(script, this);

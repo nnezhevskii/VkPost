@@ -58,16 +58,16 @@
             android:background="@android:color/darker_gray" />
 
         <Button
-            android:layout_width="120dp"
             android:id="@+id/btn_save"
+            android:layout_width="120dp"
             android:layout_height="35dp"
-            android:background="@drawable/round_button"
-            android:textColor="@android:color/white"
             android:layout_alignParentRight="true"
             android:layout_centerInParent="true"
             android:layout_margin="10dp"
+            android:background="@drawable/round_button"
+            android:text="Сохранить"
             android:textAllCaps="true"
-            android:text="Сохранить"/>
+            android:textColor="@android:color/white" />
 
         <View xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="1px"
@@ -78,32 +78,30 @@
         <android.support.v7.widget.RecyclerView
             android:id="@+id/rv_background"
             android:layout_width="match_parent"
-            android:layout_toLeftOf="@id/btn_save"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent"
+            android:layout_toLeftOf="@id/btn_save" />
 
     </RelativeLayout>
 
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/top_panel"
-        android:layout_above="@id/bottom_panel">
+        android:layout_above="@id/bottom_panel"
+        android:layout_below="@id/top_panel">
 
         <ImageView
             android:id="@+id/iv_post"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent" />
 
         <!--<com.licht.vkpost.vkpost.view.custom.TrashView-->
-            <!--android:layout_width="80dp"-->
-            <!--android:layout_height="80dp"-->
-            <!--android:layout_alignParentBottom="true"-->
-            <!--android:layout_centerHorizontal="true"-->
-            <!--/>-->
+        <!--android:layout_width="80dp"-->
+        <!--android:layout_height="80dp"-->
+        <!--android:layout_alignParentBottom="true"-->
+        <!--android:layout_centerHorizontal="true"-->
+        <!--/>-->
 
     </RelativeLayout>
-
-
 
 
 </RelativeLayout>

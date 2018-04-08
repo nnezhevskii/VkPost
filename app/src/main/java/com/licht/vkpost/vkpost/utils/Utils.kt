@@ -1,8 +1,14 @@
 package com.licht.vkpost.vkpost.utils
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.os.Environment
+import android.provider.MediaStore
+import android.util.Log
 import com.licht.vkpost.vkpost.data.model.StickerItem
+import java.io.File
+import java.io.FileOutputStream
 
 public fun buildMatrix(bitmap: Bitmap, sticker: StickerItem): Matrix {
 
@@ -21,4 +27,14 @@ public fun buildMatrix(bitmap: Bitmap, sticker: StickerItem): Matrix {
 public fun isTapOnSticker(sticker: StickerItem, x: Int, y: Int): Boolean {
     return x >= sticker.left && y >= sticker.top &&
             x <= sticker.left + sticker.width && y <= sticker.top + sticker.height
+}
+
+public fun saveImage(context: Context, finalBitmap: Bitmap, image_name: String) {
+
+    MediaStore.Images.Media.insertImage(
+            context.getContentResolver(),
+            finalBitmap,
+            image_name, ""
+    );
+
 }

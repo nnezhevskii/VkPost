@@ -2,10 +2,12 @@ package com.licht.vkpost.vkpost
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.os.Handler
 import android.provider.MediaStore
 import android.renderscript.Element
 import android.renderscript.RenderScript
@@ -14,8 +16,14 @@ import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.text.InputType
+import android.view.ViewTreeObserver
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageView
+import android.widget.RelativeLayout
 import com.licht.vkpost.vkpost.data.model.*
 import com.licht.vkpost.vkpost.utils.*
 import com.licht.vkpost.vkpost.view.BottomSheetFragment
@@ -36,6 +44,9 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     private lateinit var blurScript: ScriptIntrinsicBlur
     private lateinit var script: RenderScript
 
+    private var inputedString: String = ""
+    private lateinit var editText: EditText
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_post)
@@ -45,6 +56,19 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
             val bottomSheetFragment = BottomSheetFragment()
             bottomSheetFragment.show(supportFragmentManager, bottomSheetFragment.tag)
 
+        }
+
+        editText = findViewById<EditText>(R.id.ed_hided)
+        editText.setSingleLine(false)
+        editText.setSingleLine(false);
+        editText.setImeOptions(EditorInfo.IME_FLAG_NO_ENTER_ACTION);
+        editText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE;
+
+
+
+        editText.afterTextChanged {
+            inputedString = it
+            redraw()
         }
 
         findViewById<ImageView>(R.id.iv_change_font).setOnClickListener {
@@ -74,7 +98,7 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
             PICK_IMAGE -> {
                 data?.let {
                     background = MediaStore.Images.Media.getBitmap(this.contentResolver, data.data)
-                     redraw()
+                    redraw()
                 }
 //                val temp = 0
 //                saveImage(applicationContext, getBitmap(), "post-${Date()}")
@@ -90,6 +114,22 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         return stickers.lastOrNull { stickerItem -> isTapOnSticker(stickerItem, x, y) }
     }
 
+
+    private var oldHeightDiff = 0
+    override fun onResume() {
+        super.onResume()
+        val rootLayout = findViewById<RelativeLayout>(R.id.root_layout)
+        val keyboardLayoutListener = ViewTreeObserver.OnGlobalLayoutListener {
+            val heightDiff = rootLayout.rootView.height - rootLayout.height;
+
+            if (oldHeightDiff != heightDiff) {
+                ivPost.setImageDrawable(null)
+                oldHeightDiff = heightDiff
+                redraw()
+            }
+        }
+        rootLayout.viewTreeObserver.addOnGlobalLayoutListener(keyboardLayoutListener)
+    }
 
     override fun onPostResume() {
         super.onPostResume()
@@ -143,7 +183,7 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
     private fun getBitmap() = (ivPost.drawable as BitmapDrawable).bitmap
 
-    private lateinit var background: Bitmap
+    private var background: Bitmap? = null
     override fun setBackground(background: BackgroundWrapper) {
         this.background = background.buildBitmap(ivPost.width, ivPost.height)
         redraw()
@@ -162,7 +202,18 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
     override fun selectItem(x: Int, y: Int) {
         selectedItem = getSelectedSticker(x, y)
-        onItemSelected()
+        if (selectedItem == null) {
+
+            Handler().postDelayed(Runnable {
+                editText.requestFocus()
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+
+
+            }, 100)
+
+        } else
+            onItemSelected()
     }
 
     override fun releaseItem() {
@@ -191,8 +242,8 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     }
 
     fun isIntersectingWithTrashButton(actualX: Int, actualY: Int): Boolean {
-        return actualX in trashLocation.left..trashLocation.right &&
-                actualY in trashLocation.top..trashLocation.bottom
+        return trashLocation?.let { actualX in it.left..it.right && actualY in it.top..it.bottom }
+                ?: false
     }
 
     override fun scale(factor: Float, angle: Float) {
@@ -240,17 +291,18 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         redrawStickers(canvas)
         redrawTrash(canvas)
         redrawText(canvas)
-
-
         ivPost.invalidate()
     }
 
     private fun redrawBackground(canvas: Canvas) {
-        val src = RectF(0f, 0f, background.width.toFloat(), background.height.toFloat())
-        val dst = RectF(0f,0f,canvas.width.toFloat(), canvas.height.toFloat())
-        val mat = Matrix()
-        mat.setRectToRect(src, dst, Matrix.ScaleToFit.FILL)
-        canvas.drawBitmap(background, mat, null)
+        background?.let {
+            val src = RectF(0f, 0f, it.width.toFloat(), it.height.toFloat())
+            val dst = RectF(0f, 0f, canvas.width.toFloat(), canvas.height.toFloat())
+            val mat = Matrix()
+            mat.setRectToRect(src, dst, Matrix.ScaleToFit.FILL)
+            canvas.drawBitmap(it, mat, null)
+        }
+
     }
 
     private fun redrawStickers(canvas: Canvas) {
@@ -260,7 +312,7 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     private lateinit var closedTrashBitmap: Bitmap
     private lateinit var openedTrashBitmap: Bitmap
 
-    private lateinit var trashLocation: RectF
+    private var trashLocation: RectF? = null
 
     private fun redrawTrash(canvas: Canvas) {
         if (!isTrashShowed)
@@ -290,12 +342,10 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     private var mode = 0
 
     private fun redrawText(canvas: Canvas) {
-        val lines: List<String> = listOf<String>(
-                "Отправляюсь в отпуск",
-                "до 10 сентября. Отвечать",
-                "буду медленно. Если что-",
-                "то срочное, упоминайте в",
-                "беседах или звоните.")
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.textSize = 24 * resources.displayMetrics.density;
+
+        val lines: List<String> = buildStringList(inputedString, paint, (ivPost.width * 0.8).toInt())
 
         if (mode == 0)
             drawTextInMode1(canvas, lines)
@@ -355,7 +405,11 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 //        canvas.drawText(text, canvas.width / 2 - width / 2, canvas.height / 2f - height / 2, paint)
     }
 
-    private fun drawText(canvas: Canvas, lines: List<String>, textPaint: Paint, backPaint: Paint? = null) {
+    private fun drawText(canvas: Canvas, lines: List<String>,
+                         textPaint: Paint,
+                         cursorPaint: Paint,
+                         hintPaint: Paint,
+                         backPaint: Paint? = null) {
         val height = 24 * resources.displayMetrics.density
         val paddingBetweenLine = 4 * resources.displayMetrics.density
 
@@ -369,6 +423,9 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
 
 
         var index = 0
+        var cursorX = 0f
+        var cursorY = 0f
+
         combinedLines.forEach { lineGroup ->
 
             backPaint?.let {
@@ -382,17 +439,57 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
             }
 
             lineGroup.second.forEach {
-                canvas.drawText(lines[index++], textCenterX - lineGroup.first / 2.toFloat(), startY, textPaint)
+                canvas.drawText(lines[index], textCenterX - lineGroup.first / 2.toFloat(), startY, textPaint)
+                cursorX = textCenterX - lineGroup.first / 2 + textPaint.measureText(it).toFloat()
+                cursorY = startY.toFloat()
+
                 startY += height + paddingBetweenLine
+
+                ++index
             }
         }
 
+        if (lines.isNotEmpty() && lines.first().isNotEmpty())
+            canvas.drawLine(cursorX + 10, cursorY - height - 10, cursorX + 10, cursorY + 10, cursorPaint)
+        else {
+            val hint = "Что у вас нового?"
+            val x = textCenterX - hintPaint.measureText(hint) / 2.toFloat()
+            canvas.drawText(hint, x, startY, hintPaint)
+            canvas.drawLine(x - 5, startY - height - 10, x - 5, startY + 10, cursorPaint)
+        }
 
-//        for (i in 0 until lines.size) {
-//            val lineWidth = textPaint.measureText(lines[i])
-////
-//
-//        }
+    }
+
+    private fun buildStringList(src: String, paint: Paint, maxWidth: Int): List<String> {
+        if (src.isEmpty())
+            return listOf()
+
+        val words = src.split(' ')
+
+        val res = mutableListOf<String>()
+
+        var currentString = ""
+
+
+        for (word in words) {
+            if (paint.measureText(currentString + word) >= maxWidth) {
+                res.add(currentString)
+
+                currentString = word
+            } else {
+                if (paint.measureText(word) > maxWidth) {
+                    res.add(word.substring(0, word.length / 2 - 1) + "-")
+                    res.add(word.substring(word.length / 2))
+                } else {
+                    currentString = currentString.plus(" ").plus(word)
+                }
+
+
+            }
+        }
+        res.add(currentString)
+
+        return res
     }
 
 
@@ -423,11 +520,21 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
     }
 
     private fun drawTextInMode1(canvas: Canvas, lines: List<String>) {
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        paint.color = Color.WHITE
-        paint.textSize = 24 * resources.displayMetrics.density;
 
-        drawText(canvas, lines, paint)
+        val height = 24 * resources.displayMetrics.density
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.color = Color.BLACK
+        paint.textSize = height;
+
+        val hintPaint = Paint()
+        hintPaint.textSize = 24 * resources.displayMetrics.density;
+        hintPaint.color = Color.GRAY
+
+        val cursorPaint = Paint()
+        cursorPaint.color = Color.WHITE
+        cursorPaint.textSize = 24 * resources.displayMetrics.density;
+
+        drawText(canvas, lines, paint, cursorPaint, hintPaint, null)
     }
 
     private fun drawTextInMode2(canvas: Canvas, lines: List<String>) {
@@ -437,10 +544,18 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         paint.color = Color.BLACK
         paint.textSize = height;
 
-        val myPaint = Paint()
-        myPaint.setColor(Color.WHITE)
+        val backPaint = Paint()
+        backPaint.setColor(Color.WHITE)
 
-        drawText(canvas, lines, paint, myPaint)
+        val hintPaint = Paint()
+        hintPaint.textSize = 24 * resources.displayMetrics.density;
+        hintPaint.color = Color.GRAY
+
+        val cursorPaint = Paint()
+        cursorPaint.color = Color.GRAY
+        cursorPaint.textSize = 24 * resources.displayMetrics.density;
+
+        drawText(canvas, lines, paint, cursorPaint, hintPaint, backPaint)
     }
 
     private fun drawTextInMode3(canvas: Canvas, lines: List<String>) {
@@ -450,10 +565,19 @@ class PostActivity : AppCompatActivity(), IPostView, ItemManipulator {
         paint.color = Color.WHITE
         paint.textSize = height;
 
-        val myPaint = Paint()
-        myPaint.setColor(Color.argb(64, 255, 255, 255))
+        val backPaint = Paint()
+        backPaint.setColor(Color.argb(64, 255, 255, 255))
 
-        drawText(canvas, lines, paint, myPaint)
+        val hintPaint = Paint()
+        hintPaint.textSize = 24 * resources.displayMetrics.density;
+        hintPaint.color = Color.GRAY
+
+        val cursorPaint = Paint()
+        cursorPaint.color = Color.GRAY
+        cursorPaint.textSize = 24 * resources.displayMetrics.density;
+
+        drawText(canvas, lines, paint, cursorPaint, hintPaint, backPaint)
+
     }
 
     private fun initializeTrashIcons() {

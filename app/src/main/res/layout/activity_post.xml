@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/root_layout"
     tools:context="com.licht.vkpost.vkpost.PostActivity">
 
     <RelativeLayout
@@ -103,5 +104,9 @@
 
     </RelativeLayout>
 
+    <EditText
+        android:id="@+id/ed_hided"
+        android:layout_width="0dp"
+        android:layout_height="0dp" />
 
 </RelativeLayout>

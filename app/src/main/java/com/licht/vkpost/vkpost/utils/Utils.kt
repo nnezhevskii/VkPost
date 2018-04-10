@@ -85,5 +85,12 @@ fun RectF.buildScaleMatrixTo(dst: RectF): Matrix {
     return matrix
 }
 
+fun Rect.buildScaleMatrixTo(dst: Rect): Matrix {
+    val matrix = Matrix()
+    val rect1 = RectF(left.toFloat(), top.toFloat(), right.toFloat(), bottom.toFloat())
+    val rect2 = RectF(dst.left.toFloat(), dst.top.toFloat(), dst.right.toFloat(), dst.bottom.toFloat())
+    return rect1.buildScaleMatrixTo(rect2)
+}
+
 fun Bitmap.buildRectF(): RectF = RectF(0f, 0f, width.toFloat(), height.toFloat())
 fun Bitmap.buildRect(): Rect = Rect(0, 0, width, height)

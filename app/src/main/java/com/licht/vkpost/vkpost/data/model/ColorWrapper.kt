@@ -98,9 +98,10 @@ class AddImageCommandWrapper: BackgroundWrapper() {
         val context = App.application.applicationContext
         val bitmap: Bitmap = getBitmapFromResoure(context.resources, R.drawable.ic_toolbar_new)
 
+        canvas.drawColor(getColorByRes(R.color.colorAddBackground))
         canvas.drawBitmap(bitmap, bitmap.buildRect(), Rect(0, 0, width, height), null)
 
-        return bitmap.copy(Bitmap.Config.ARGB_8888, true)
+        return backBitmap.copy(Bitmap.Config.ARGB_8888, true)
     }
 
     override fun isCommandItem() = true

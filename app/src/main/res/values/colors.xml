@@ -9,4 +9,5 @@
     <color name="colorDarkPink">#d9205c</color>
     <color name="colorLilac">#be8eef</color>
     <color name="colorBackAlpha">#40FFFFFF</color>
+    <color name="colorAddBackground">#d7e4f3</color>
 </resources>

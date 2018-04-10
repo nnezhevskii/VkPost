@@ -6,11 +6,8 @@ import android.util.Log
 import android.widget.ImageView
 import com.licht.vkpost.vkpost.App
 import com.licht.vkpost.vkpost.R
-import com.licht.vkpost.vkpost.utils.getBitmapFromResoure
-import com.licht.vkpost.vkpost.utils.getBrighterColor
-import com.licht.vkpost.vkpost.utils.getLessColor
+import com.licht.vkpost.vkpost.utils.*
 
-// todo lru cache
 sealed class BackgroundWrapper {
     fun drawOn(imageView: ImageView, width: Int, height: Int) {
         imageView.setImageBitmap(buildBitmap(width, height))
@@ -19,6 +16,28 @@ sealed class BackgroundWrapper {
     open fun isCommandItem(): Boolean = false
 
     abstract fun buildBitmap(width: Int, height: Int): Bitmap
+
+    public companion object {
+        public fun getDefaultsBackgrounds(): List<BackgroundWrapper> {
+            val context = App.application.applicationContext
+            val backgrounds: MutableList<BackgroundWrapper> = mutableListOf(
+                    ContextCompat.getColor(context, android.R.color.white),
+                    ContextCompat.getColor(context, R.color.colorGreen),
+                    ContextCompat.getColor(context, R.color.colorOrange),
+                    ContextCompat.getColor(context, R.color.colorDarkPink),
+                    ContextCompat.getColor(context, R.color.colorLilac)
+            ).map { color -> ColorWrapper(color) }.toMutableList()
+            backgrounds.add(ImageWrapper(getBitmapFromResoure(context.resources, R.drawable.bg_stars_center)))
+            backgrounds.add(CompoundImageWrapper(
+                    getBitmapFromResoure(context.resources, R.drawable.bg_beach_center),
+                    getBitmapFromResoure(context.resources, R.drawable.bg_beach_top),
+                    getBitmapFromResoure(context.resources, R.drawable.bg_beach_bottom)))
+
+            backgrounds.add(AddImageCommandWrapper())
+
+            return backgrounds
+        }
+    }
 }
 
 data class ColorWrapper(val color: Int) : BackgroundWrapper() {
@@ -44,14 +63,9 @@ data class ColorWrapper(val color: Int) : BackgroundWrapper() {
 data class ImageWrapper(val bitmap: Bitmap) : BackgroundWrapper() {
 
     override fun buildBitmap(width: Int, height: Int): Bitmap {
-        Log.e("ImageWrapper", "buildBitmap(${width}, ${height})")
         val backBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(backBitmap)
-
-        val src = Rect(0, 0, bitmap.width, bitmap.height)
-        val dst = Rect(0, 0, width, height)
-
-        canvas.drawBitmap(bitmap, src, dst, null)
+        canvas.drawBitmap(bitmap, bitmap.buildRect(), Rect(0, 0, width, height), null)
 
         return bitmap.copy(Bitmap.Config.ARGB_8888, true)
     }
@@ -61,46 +75,30 @@ data class CompoundImageWrapper(val background: Bitmap,
                                 val top: Bitmap,
                                 val bottom: Bitmap) : BackgroundWrapper() {
     override fun buildBitmap(width: Int, height: Int): Bitmap {
-        Log.e("CompoundImageWrapper", "buildBitmap(${width}, ${height})")
         val backBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(backBitmap)
 
-        val srcBackground = RectF(0F, 0F, background.width.toFloat(), background.height.toFloat())
-        val dstBackground = RectF(0F, 0F, width.toFloat(), height.toFloat())
-        val matrixBack = Matrix()
-        matrixBack.setRectToRect(srcBackground, dstBackground, Matrix.ScaleToFit.FILL)
-        canvas.drawBitmap(background, matrixBack, null)
-
-
-        val srcTop = RectF(0F, 0F, top.width.toFloat(), top.height.toFloat())
+        val dst = RectF(0F, 0F, width.toFloat(), height.toFloat())
         val dstTop = RectF(0F, 0F, width.toFloat(), height.toFloat() / 3)
-        val matrixTop = Matrix()
-        matrixTop.setRectToRect(srcTop, dstTop, Matrix.ScaleToFit.FILL)
-        canvas.drawBitmap(top, matrixTop, null)
-
-        val srcBottom = RectF(0f, 0f, bottom.width.toFloat(), bottom.height.toFloat())
         val dstBottom = RectF(0f, 2f * height / 3, width.toFloat(), height.toFloat())
 
-        val matrixBottom = Matrix()
-        matrixBottom.setRectToRect(srcBottom, dstBottom, Matrix.ScaleToFit.FILL)
-        canvas.drawBitmap(bottom, matrixBottom, null)
+        canvas.drawBitmap(background, background.buildRectF().buildScaleMatrixTo(dst), null)
+        canvas.drawBitmap(top, top.buildRectF().buildScaleMatrixTo(dstTop), null)
+        canvas.drawBitmap(bottom, bottom.buildRectF().buildScaleMatrixTo(dstBottom), null)
 
         return backBitmap
     }
 }
 
-class AddImageCommandWrapper(): BackgroundWrapper() {
+class AddImageCommandWrapper: BackgroundWrapper() {
     override fun buildBitmap(width: Int, height: Int): Bitmap {
         val backBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(backBitmap)
 
         val context = App.application.applicationContext
         val bitmap: Bitmap = getBitmapFromResoure(context.resources, R.drawable.ic_toolbar_new)
-//                ContextCompat.getDrawable(context, R.drawable.ic_toolbar_new)
 
-        val src = Rect(0, 0, bitmap.width, bitmap.height)
-        val dst = Rect(0, 0, width, height)
-        canvas.drawBitmap(bitmap, src, dst, null)
+        canvas.drawBitmap(bitmap, bitmap.buildRect(), Rect(0, 0, width, height), null)
 
         return bitmap.copy(Bitmap.Config.ARGB_8888, true)
     }

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/root_layout"
     tools:context="com.licht.vkpost.vkpost.PostActivity">
 
     <RelativeLayout
@@ -45,8 +45,16 @@
 
     </RelativeLayout>
 
+    <ImageView
+        android:id="@+id/iv_post"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_centerInParent="true" />
+
+
     <RelativeLayout
         android:id="@+id/bottom_panel"
+        android:background="@android:color/white"
         android:layout_width="match_parent"
         android:layout_height="65dp"
         android:layout_alignParentBottom="true">
@@ -84,29 +92,11 @@
 
     </RelativeLayout>
 
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@id/bottom_panel"
-        android:layout_below="@id/top_panel">
-
-        <ImageView
-            android:id="@+id/iv_post"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-        <!--<com.licht.vkpost.vkpost.view.custom.TrashView-->
-        <!--android:layout_width="80dp"-->
-        <!--android:layout_height="80dp"-->
-        <!--android:layout_alignParentBottom="true"-->
-        <!--android:layout_centerHorizontal="true"-->
-        <!--/>-->
-
-    </RelativeLayout>
 
     <EditText
         android:id="@+id/ed_hided"
         android:layout_width="0dp"
-        android:layout_height="0dp" />
+        android:layout_height="0dp"
+        android:singleLine="false" />
 
 </RelativeLayout>

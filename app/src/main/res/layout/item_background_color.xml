@@ -4,7 +4,7 @@
     android:layout_height="65dp">
 
 
-    <com.licht.vkpost.vkpost.RoundedCornerLayout
+    <com.licht.vkpost.vkpost.RoundedCornerImageView
         android:id="@+id/item"
         android:layout_width="100px"
         android:layout_height="100px"

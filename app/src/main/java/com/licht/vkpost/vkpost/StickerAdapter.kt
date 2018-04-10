@@ -18,8 +18,9 @@ class StickerAdapter(private val stickerView: IStickerSelector):
     private val stickers = mutableListOf<Sticker>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StickerViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_sticker, parent, false)
         context = parent.context
+
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_sticker, parent, false)
         val vh = StickerViewHolder(view)
         vh.itemView.setOnClickListener {
             stickerView.onStickerSelecter(stickers[vh.adapterPosition])
@@ -28,9 +29,7 @@ class StickerAdapter(private val stickerView: IStickerSelector):
         return vh
     }
 
-    override fun onBindViewHolder(holder: StickerViewHolder, position: Int) {
-        holder.bind(stickers[position])
-    }
+    override fun onBindViewHolder(holder: StickerViewHolder, position: Int) = holder.bind(stickers[position])
 
     override fun getItemCount(): Int = stickers.size
 

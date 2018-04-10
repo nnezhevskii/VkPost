@@ -4,9 +4,10 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
+import java.lang.ref.WeakReference
 
 class GestureHelper(private val view: ImageView) : View.OnTouchListener {
-    private val listeners: MutableList<ItemManipulator> = mutableListOf()
+    private var listener: WeakReference<ItemManipulator>? = null
 
     private var mPtrCount = 0
 
@@ -29,11 +30,11 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
     }
 
     fun addListener(listener: ItemManipulator) {
-        listeners.add(listener)
+        this.listener = WeakReference(listener)
     }
 
-    fun removeListener(listener: ItemManipulator) {
-        listeners.remove(listener)
+    fun removeListener() {
+        listener = null
     }
 
     override fun onTouch(v: View, event: MotionEvent): Boolean {
@@ -166,19 +167,19 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
     }
 
     private fun notifyItemScaleAndRotate(scale: Float, angle: Float) {
-        listeners.forEach { listener -> listener.scale(scale, angle) }
+            listener?.get()?.scaleAndRotate(scale, angle)
     }
 
     private fun notifyItemSelect(x: Int, y: Int) {
-        listeners.forEach { listener -> listener.selectItem(x, y) }
+            listener?.get()?.selectItem(x, y)
     }
 
     private fun notifyItemRelease() {
-        listeners.forEach { listener -> listener.releaseItem() }
+            listener?.get()?.releaseItem()
     }
 
     private fun notifyItemMovedTo(actualX: Int, actualY: Int, dx: Int, dy: Int) {
-        listeners.forEach { listener -> listener.moveTo(actualX, actualY, dx, dy) }
+            listener?.get()?.moveTo(actualX, actualY, dx, dy)
     }
 }
 
@@ -188,6 +189,6 @@ class GestureHelper(private val view: ImageView) : View.OnTouchListener {
 interface ItemManipulator {
     fun selectItem(x: Int, y: Int)
     fun moveTo(actualX: Int, actualY: Int, dx: Int, dy: Int)
-    fun scale(factor: Float, angle: Float)
+    fun scaleAndRotate(factor: Float, angle: Float)
     fun releaseItem()
 }

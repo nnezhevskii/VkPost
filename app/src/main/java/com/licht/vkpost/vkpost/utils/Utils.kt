@@ -1,14 +1,18 @@
 package com.licht.vkpost.vkpost.utils
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.Resources
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
+import android.graphics.*
 import android.os.Environment
+import android.os.Handler
 import android.provider.MediaStore
+import android.support.constraint.solver.widgets.Rectangle
+import android.support.v4.content.ContextCompat
 import android.util.Log
 import android.util.TypedValue
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import com.licht.vkpost.vkpost.App
 import com.licht.vkpost.vkpost.data.model.StickerItem
 import java.io.File
@@ -42,9 +46,44 @@ public fun saveImage(context: Context, finalBitmap: Bitmap, image_name: String) 
     );
 }
 
+
+fun getColorByRes(resourceId: Int): Int {
+    return ContextCompat.getColor(App.application, resourceId)
+}
+
 fun dpToPx(dp: Int): Int {
     val r = App.application.getResources()
     return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp.toFloat(), r.getDisplayMetrics()).toInt()
 }
 
 fun getBitmapFromResoure(resources: Resources, id: Int): Bitmap = BitmapFactory.decodeResource(resources, id)
+
+
+fun openKeyboard(context: Context, editText: EditText) {
+    Handler().postDelayed({
+        editText.requestFocus()
+        val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+    }, 100)
+}
+
+fun isIntersectingWithRectangle(rect: RectF?, actualX: Int, actualY: Int): Boolean {
+    return rect?.let { actualX in it.left..it.right && actualY in it.top..it.bottom }
+            ?: false
+}
+
+fun buildIntentForPickImage(): Intent {
+    val intent = Intent()
+    intent.type = "image/*"
+    intent.action = Intent.ACTION_GET_CONTENT
+    return Intent.createChooser(intent, "Select Picture")
+}
+
+fun RectF.buildScaleMatrixTo(dst: RectF): Matrix {
+    val matrix = Matrix()
+    matrix.setRectToRect(this, dst, Matrix.ScaleToFit.FILL)
+    return matrix
+}
+
+fun Bitmap.buildRectF(): RectF = RectF(0f, 0f, width.toFloat(), height.toFloat())
+fun Bitmap.buildRect(): Rect = Rect(0, 0, width, height)

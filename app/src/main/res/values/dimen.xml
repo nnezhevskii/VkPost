@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="closed_trash_radius">40dp</dimen>
-    <dimen name="trash_padding_bottom">20dp</dimen>
-    <dimen name="trash_inner_padding">15dp</dimen>
+    <dimen name="closed_trash_radius">25dp</dimen>
+    <dimen name="trash_padding_bottom">10dp</dimen>
+    <dimen name="trash_inner_padding">10dp</dimen>
+    <dimen name="text_font_size">24sp</dimen>
+    <dimen name="padding_between_lines">4dp</dimen>
+    <dimen name="background_item_size">40dp</dimen>
+
+    <dimen name="padding_background_item_outer">3dp</dimen>
+    <dimen name="padding_background_item_inner">8dp</dimen>
 </resources>

@@ -2,12 +2,15 @@ package com.licht.vkpost.vkpost
 
 import android.content.Context
 import android.graphics.*
+import android.support.v4.content.ContextCompat
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.licht.vkpost.vkpost.data.model.BackgroundWrapper
+import com.licht.vkpost.vkpost.utils.buildRectF
+import com.licht.vkpost.vkpost.utils.buildScaleMatrixTo
 import com.licht.vkpost.vkpost.utils.dpToPx
 import com.licht.vkpost.vkpost.view.IPostView
 
@@ -79,13 +82,17 @@ class BackgroundAdapter(private val postView: IPostView) : RecyclerView.Adapter<
 
     inner class ColorViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
         private var backgroundWrapper: BackgroundWrapper? = null
-        private val item = view.findViewById<RoundedCornerLayout>(R.id.item)
+        private val item = view.findViewById<RoundedCornerImageView>(R.id.item)
+
         fun bind(backWrapper: BackgroundWrapper) {
             this.backgroundWrapper = backWrapper
             draw()
         }
 
         fun draw() {
+
+            val size = context.resources.getDimension(R.dimen.background_item_size).toInt()
+
             if (backgroundWrapper == null)
                 return
 
@@ -93,38 +100,37 @@ class BackgroundAdapter(private val postView: IPostView) : RecyclerView.Adapter<
 
             val isSelected = item.isSelectedItem
             if (isSelected) {
-                val backBitmap = Bitmap.createBitmap(dpToPx(40), dpToPx(40), Bitmap.Config.ARGB_8888)
+                val backBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
                 val canvas = Canvas(backBitmap)
 
                 val myPaint = Paint()
-                myPaint.setColor(Color.RED)
-                myPaint.setStyle(Paint.Style.STROKE);
+                myPaint.color = ContextCompat.getColor(context, R.color.colorBackgroundFrame)
+                myPaint.style = Paint.Style.STROKE;
 
-                myPaint.setStrokeWidth(10f)
+                val outerPadding = context.resources.getDimension(R.dimen.padding_background_item_outer)
+                myPaint.strokeWidth = outerPadding
 
-                val rect: RectF = RectF(10f, 10f, canvas.width - 10f, canvas.height - 10f)
-                canvas.drawRoundRect(rect, 10f, 10f, myPaint)
+                val rect: RectF = RectF(outerPadding, outerPadding, canvas.width - outerPadding, canvas.height - outerPadding)
+                canvas.drawRoundRect(rect, outerPadding, outerPadding, myPaint)
 
                 item.setImageBitmap(backBitmap)
 
-                val bitmap = backWrapper.buildBitmap(dpToPx(40), dpToPx(40))
+                val innerPadding = context.resources.getDimension(R.dimen.padding_background_item_inner)
+                val bitmap = backWrapper.buildBitmap(size, size)
 
-                val src = RectF(0f, 0f, bitmap.width.toFloat(), bitmap.height.toFloat())
-                val dst = RectF(25f, 25f, canvas.width - 25.toFloat(), canvas.height - 25.toFloat())
+                val dst = RectF(innerPadding, innerPadding, canvas.width - innerPadding, canvas.height - innerPadding)
 
-                val matrix = Matrix()
-                matrix.setRectToRect(src, dst, Matrix.ScaleToFit.FILL)
-                canvas.drawBitmap(bitmap, matrix, null)
+                canvas.drawBitmap(bitmap, bitmap.buildRectF().buildScaleMatrixTo(dst), null)
             }
 
             else {
-                backWrapper.drawOn(item, dpToPx(40), dpToPx(40))
+                backWrapper.drawOn(item, size, size)
             }
 
         }
 
         fun updateSelection(isSelected: Boolean) {
-            view.findViewById<RoundedCornerLayout>(R.id.item).isSelectedItem = isSelected
+            view.findViewById<RoundedCornerImageView>(R.id.item).isSelectedItem = isSelected
             draw()
         }
     }

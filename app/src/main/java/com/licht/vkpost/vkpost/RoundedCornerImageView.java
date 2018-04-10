@@ -13,7 +13,7 @@ import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.widget.ImageView;
 
-public class RoundedCornerLayout extends ImageView {
+public class RoundedCornerImageView extends ImageView {
     private final static float CORNER_RADIUS = 10.0f;
 
     private Bitmap maskBitmap;
@@ -30,17 +30,17 @@ public class RoundedCornerLayout extends ImageView {
         this.selectedItem = selectedItem;
     }
 
-    public RoundedCornerLayout(Context context) {
+    public RoundedCornerImageView(Context context) {
         super(context);
         init(context, null, 0);
     }
 
-    public RoundedCornerLayout(Context context, AttributeSet attrs) {
+    public RoundedCornerImageView(Context context, AttributeSet attrs) {
         super(context, attrs);
         init(context, attrs, 0);
     }
 
-    public RoundedCornerLayout(Context context, AttributeSet attrs, int defStyle) {
+    public RoundedCornerImageView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         init(context, attrs, defStyle);
     }
